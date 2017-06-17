@@ -1,9 +1,11 @@
 Package: TCGADataFelix
-Title: What the Package Does (one line, title case)
+Title: Analyzing the TCGA Data according to gene expression and survival
 Version: 0.0.0.9000
-Authors@R: person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+Authors@R: person("Felix", "Geist", email = "f.geist@dkfz.de", role = c("aut", "cre"))
+Description: Yet another survival function for the TCGA Data. It makes quite decent looking graphs of survival and cox regression analysis
 Depends: R (>= 3.4.0)
-License: What license is it under?
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
+RoxygenNote: 6.0.1
+Imports: ggplot2
