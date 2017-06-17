@@ -83,15 +83,15 @@ smoothCoxph_man <- function (x, Eset, exclude_values,
     }
     if(average=="mean"){
       z <- z[order(z$Mean), ]
-      coxph1 <- coxph(Surv(time, event) ~ pspline(Mean, df = 4), data = z)
+      coxph1 <- survival::coxph(Surv(time, event) ~ pspline(Mean, df = 4), data = z)
     } else {
       z <- z[order(z$Median), ]
-      coxph1 <- coxph(Surv(time, event) ~ pspline(Median, df = 4), data = z)
+      coxph1 <- survival::coxph(Surv(time, event) ~ pspline(Median, df = 4), data = z)
     }
   } else {
     z <- z[!is.na(z$x), ]
     z <- z[order(z$x), ]
-    coxph1 <- coxph(Surv(time, event) ~ pspline(x, df = 4), data = z)
+    coxph1 <- survival::coxph(Surv(time, event) ~ pspline(x, df = 4), data = z)
   }
 
   if (logrisk) {
@@ -120,13 +120,13 @@ smoothCoxph_man <- function (x, Eset, exclude_values,
 
   if(length(gene)>1){
     if(average=="mean"){
-      coxph2 <- coxph(Surv(time, event) ~ Mean, data = z)
+      coxph2 <- survival::coxph(Surv(time, event) ~ Mean, data = z)
       data_smooth <- data.frame(expression = z$Mean[1:length(pred$fit)],
                                 hazard_ratio = y[, 1],
                                 lower95 = y[, 2],
                                 upper95 = y[, 3])
     } else {
-      coxph2 <- coxph(Surv(time, event) ~ Median, data = z)
+      coxph2 <- survival::coxph(Surv(time, event) ~ Median, data = z)
       data_smooth <- data.frame(expression = z$Median[1:length(pred$fit)],
                                 hazard_ratio = y[, 1],
                                 lower95 = y[, 2],
@@ -134,7 +134,7 @@ smoothCoxph_man <- function (x, Eset, exclude_values,
     }
 
   } else {
-    coxph2 <- coxph(Surv(time, event) ~ x, data = z)
+    coxph2 <- survival::coxph(Surv(time, event) ~ x, data = z)
     data_smooth <- data.frame(expression = z$x[1:length(pred$fit)],
                               hazard_ratio = y[, 1],
                               lower95 = y[, 2],
@@ -167,20 +167,20 @@ smoothCoxph_man <- function (x, Eset, exclude_values,
   Plot_Title <- paste("Correlation of", gene_name, "expression levels\nto log hazard ratio")
 
   ggplot2::ggplot(data_smooth, aes(x = expression)) +
-    ggtitle(Plot_Title) +
-    theme(plot.title = element_text(size=11,
+    ggplot2::ggtitle(Plot_Title) +
+    ggplot2::theme(plot.title = element_text(size=11,
                                     face="bold",
                                     margin = margin(10, 0, 20, 0))) +
-    theme_bw() +
-    geom_hline(yintercept=0, size=1, color = "grey") +
-    geom_line(aes(y = hazard_ratio), color = "dark blue", lwd = 1) +
-    geom_line(aes(y = upper95), color = "dark grey", linetype = "dashed") +
-    geom_line(aes(y = lower95), color = "dark grey", linetype = "dashed") +
-    geom_ribbon(aes(ymin = lower95, ymax = upper95), fill = "steelblue2", color=NA, alpha = 0.1) +
-    ylim(ylimit) +
-    xlim(xlimit) +
-    ylab(label=ylabel) +
-    xlab(label=xlabel) +
-    annotate("text", x=xlimit[2], y=(ylimit[2]-(ylimit[2]-ylimit[1])*0.95), hjust = 1, label=paste("HR =", round(coeffs[,2], digits=4), "+/-", round(coeffs[,3], digits=4))) +
-    annotate("text", x=xlimit[2], y=(ylimit[2]-(ylimit[2]-ylimit[1])*0.99), hjust = 1, label=paste("p <", ifelse(coeffs[,5]>0.05, "NS", ifelse(coeffs[,5]>0.01, "0.05", ifelse(coeffs[,5]>0.005, "0.01", "0.005")))))
+    ggplot2::theme_bw() +
+    ggplot2::geom_hline(yintercept=0, size=1, color = "grey") +
+    ggplot2::geom_line(aes(y = hazard_ratio), color = "dark blue", lwd = 1) +
+    ggplot2::geom_line(aes(y = upper95), color = "dark grey", linetype = "dashed") +
+    ggplot2::geom_line(aes(y = lower95), color = "dark grey", linetype = "dashed") +
+    ggplot2::geom_ribbon(aes(ymin = lower95, ymax = upper95), fill = "steelblue2", color=NA, alpha = 0.1) +
+    ggplot2::ylim(ylimit) +
+    ggplot2::xlim(xlimit) +
+    ggplot2::ylab(label=ylabel) +
+    ggplot2::xlab(label=xlabel) +
+    ggplot2::annotate("text", x=xlimit[2], y=(ylimit[2]-(ylimit[2]-ylimit[1])*0.95), hjust = 1, label=paste("HR =", round(coeffs[,2], digits=4), "+/-", round(coeffs[,3], digits=4))) +
+    ggplot2::annotate("text", x=xlimit[2], y=(ylimit[2]-(ylimit[2]-ylimit[1])*0.99), hjust = 1, label=paste("p <", ifelse(coeffs[,5]>0.05, "NS", ifelse(coeffs[,5]>0.01, "0.05", ifelse(coeffs[,5]>0.005, "0.01", "0.005")))))
 }
