@@ -37,20 +37,11 @@ Survival_adaptable <- function (x, Eset, value = 0,
   event <- pData(Eset)$X_OS_IND
   gene <- x
 
-  # time <- pData(kikaEset)$X_OS
-  # event <- pData(kikaEset)$X_OS_IND
-  # value <- 0
-  # additional <- "hemoglobin_result"
-  # value seperates the groups
-
-  # p.value only sensible for two groups to compare
-
   if (missing(xlabel)) xlabel <- "time"
   if (missing(ylabel)) ylabel <- "Survival"
 
   # get the data to the Surv variables
   # Adding a column with gene expression labels to the phenotype, updates if new values
-
 
   z <- data.frame(time = time, event = event)
   if(length(gene)>1){
