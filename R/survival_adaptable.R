@@ -12,7 +12,7 @@
 #' @param ylabel User defined y-axis label
 #' @param logrisk logrisk?!
 #' @param legend_position where should the legend be? doesn't work with theme_bw
-#' @param durchschnitt for more than one gene, how the value of the averaged z-score is calculated, either median or mean
+#' @param average for more than one gene, how the value of the averaged z-score is calculated, either median or mean
 #' @param optimal calculate the optimal cutpoint, will overide the value value when numeric, does not work when value = "q"
 #' @param plot_cutpoint Plot the graph how the optimal cutpoint was calculated, normal survival plot will be REPLACED by surv_cutpoint: Determine the optimal cutpoint for each variable using ’maxstat’
 #' @param ... additional variables that can be added
@@ -25,7 +25,7 @@
 #' Survival_adaptable(x = c("FOXA2"), Eset = Eset,
 #' value = 0, additional = "pathologic_stage",
 #' exclude = c("Stage IV"), p.val=TRUE,
-#' xlabel="Days", legend_position = "top", durchschnitt = "median",
+#' xlabel="Days", legend_position = "top", average = "median",
 #' optimal=T, plot_cutpoint=F)
 #' }
 Survival_adaptable <- function (x, Eset,
@@ -37,7 +37,7 @@ Survival_adaptable <- function (x, Eset,
                                 ylabel,
                                 logrisk = TRUE,
                                 legend_position,
-                                durchschnitt = "mean",
+                                average = "mean",
                                 optimal = FALSE,
                                 plot_cutpoint=FALSE, ...) {
   if (missing(x)) {
@@ -47,6 +47,7 @@ Survival_adaptable <- function (x, Eset,
   time <- Biobase::pData(Eset)$X_OS
   event <- Biobase::pData(Eset)$X_OS_IND
   gene <- x
+
 
   if (missing(xlabel)){
     xlabel <- "time"
@@ -172,7 +173,7 @@ Survival_adaptable <- function (x, Eset,
     for(i in 1:length(gene)){
       z <- z[!is.na(z[,gene[i]]), ]
     }
-    if(durchschnitt=="mean"){
+    if(average=="mean"){
       z <- z[order(z$Mean), ]
       coxph1 <- survival::coxph(survival::Surv(time, event) ~ Mean, data = z)
     } else {
@@ -216,7 +217,7 @@ Survival_adaptable <- function (x, Eset,
     Nameing_vector <- c(paste(numbers_quantiles[,2], " Expression - ", additional, ": ", numbers_quantiles[,1], sep=""))
 
     if(length(gene)>1){
-      label_mean <- ifelse(durchschnitt=="mean","Mean","Median")
+      label_mean <- ifelse(average=="mean","Mean","Median")
       if(length(gene)>5){
         length_gene_rounded <- floor(length(gene)/5)
         gene_names <- c()
@@ -292,7 +293,7 @@ Survival_adaptable <- function (x, Eset,
 
 
     if(length(gene)>1){
-      label_mean <- ifelse(durchschnitt == "mean","Mean","Median")
+      label_mean <- ifelse(average == "mean","Mean","Median")
       if(length(gene)>5){
         length_gene_rounded <- floor(length(gene)/5)
         gene_names <- c()
