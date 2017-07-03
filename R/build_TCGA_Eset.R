@@ -129,7 +129,7 @@ for (i in 1:dim(death)[1]){
 
 # and days last follow up here we take the most recent which is the max number
 ind_keep <- grep('days_to_last_followup',colnames(clinical1))
-View(fl)
+# View(fl)
 fl <- as.matrix(clinical1[,ind_keep])
 fl_collapsed <- c()
 for (i in 1:dim(fl)[1]){
@@ -162,7 +162,7 @@ clinical1$X_OS <- all_clin_2$new_death
 clinical1$age <- floor(-as.numeric(clinical1$patient.days_to_birth)/365.2422)
 
 
-View(clinical1[,c("X_OS","X_OS_IND","patient.follow_ups.follow_up-2.days_to_last_followup","patient.follow_ups.follow_up.days_to_death", "patient.follow_ups.follow_up.vital_status" )])
+# View(clinical1[,c("X_OS","X_OS_IND","patient.follow_ups.follow_up-2.days_to_last_followup","patient.follow_ups.follow_up.days_to_death", "patient.follow_ups.follow_up.vital_status" )])
 
 
 ##### make expression set:
