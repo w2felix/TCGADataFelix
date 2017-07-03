@@ -23,11 +23,17 @@
 #' @examples Survival_adaptable(x = c("FOXA2"), Eset = Eset, value = 0,
 #' additional = "pathologic_stage", exclude = c("Stage IV"), zscore=T, p.val=TRUE,
 #' xlabel="Days", legend_position = "top", durchschnitt = "median", optimal=T, plot_cutpoint=F)
-Survival_adaptable <- function (x, Eset, value = 0,
-                                additional, exclude,
-                                p.val = FALSE, xlabel, ylabel,
-                                logrisk = TRUE, legend_position,
-                                durchschnitt = "mean", optimal = FALSE,
+Survival_adaptable <- function (x, Eset,
+                                value = 0,
+                                additional,
+                                exclude,
+                                p.val = FALSE,
+                                xlabel,
+                                ylabel,
+                                logrisk = TRUE,
+                                legend_position,
+                                durchschnitt = "mean",
+                                optimal = FALSE,
                                 plot_cutpoint=FALSE, ...) {
   if (missing(x)) {
     stop("You have to define a gene you want to calculate survival")
@@ -252,9 +258,9 @@ Survival_adaptable <- function (x, Eset, value = 0,
       # cumevents=T
       # cumcensor=T
 
-      surv.median.line="hv",
+      surv.median.line="hv"
       # tables.theme = theme_cleantable(),
-      ggtheme = theme_bw() # Change ggplot2 theme
+      # ggtheme = theme_bw() # Change ggplot2 theme
     )
     p
 
@@ -327,9 +333,9 @@ Survival_adaptable <- function (x, Eset, value = 0,
       # cumevents=T
       # cumcensor=T
 
-      surv.median.line="hv",
+      surv.median.line="hv"
       # tables.theme = theme_cleantable(),
-      ggtheme = theme_bw() # Change ggplot2 theme
+      # ggtheme = theme_bw() # Change ggplot2 theme
     )
     p
   }
