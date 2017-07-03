@@ -2,7 +2,7 @@
 % Please edit documentation in R/survival_adaptable.R
 \name{Survival_adaptable}
 \alias{Survival_adaptable}
-\title{Title}
+\title{Create a Kaplan Meier Estimator by using a TCGA Dataset}
 \usage{
 Survival_adaptable(x, Eset, value = 0, additional, exclude, p.val = FALSE,
   xlabel, ylabel, logrisk = TRUE, legend_position, durchschnitt = "mean",
@@ -15,7 +15,7 @@ Survival_adaptable(x, Eset, value = 0, additional, exclude, p.val = FALSE,
 
 \item{value}{Defines the value to subdivide the gene expression groups.
 Numeric: Devided into two groups
-"q": 25% quantile, 25-75% quantile and 75% quantile}
+"q": 25 \% quantile, 25-75 \% quantile and 75 \% quantile}
 
 \item{additional}{Additional covariate to subset groups}
 
@@ -37,16 +37,20 @@ Numeric: Devided into two groups
 
 \item{plot_cutpoint}{Plot the graph how the optimal cutpoint was calculated, normal survival plot will be REPLACED by surv_cutpoint: Determine the optimal cutpoint for each variable using ’maxstat’}
 
-\item{...}{}
+\item{...}{additional variables that can be added}
 }
 \value{
 A survival Estimator
 }
 \description{
-Title
+Create a Kaplan Meier Estimator by using a TCGA Dataset
 }
 \examples{
-Survival_adaptable(x = c("FOXA2"), Eset = Eset, value = 0,
-additional = "pathologic_stage", exclude = c("Stage IV"), zscore=T, p.val=TRUE,
-xlabel="Days", legend_position = "top", durchschnitt = "median", optimal=T, plot_cutpoint=F)
+\dontrun{
+Survival_adaptable(x = c("FOXA2"), Eset = Eset,
+value = 0, additional = "pathologic_stage",
+exclude = c("Stage IV"), p.val=TRUE,
+xlabel="Days", legend_position = "top", durchschnitt = "median",
+optimal=T, plot_cutpoint=F)
+}
 }

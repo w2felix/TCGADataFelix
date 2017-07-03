@@ -26,7 +26,7 @@ smoothCoxph_man(x, Eset, exclude_values, xlimit, ylimit, xlabel, ylabel,
 
 \item{average}{values: `mean` or `median`, defines how >1 genes are averaged}
 
-\item{...}{}
+\item{...}{additional variables that can be added}
 }
 \value{
 Plots the log Hazard ratio in correlation to its relative gene expression level using ggplot2
@@ -35,11 +35,10 @@ Plots the log Hazard ratio in correlation to its relative gene expression level 
 Create a correlation of gene expression to log hazard ratio
 }
 \examples{
-smoothCoxph_Felix(x = c("BAMBI", "CD44"),
-kikaEset=kikaEset2,
+\dontrun{
+smoothCoxph_man(x = c("BAMBI", "CD44"), Eset=Eset,
 exclude_values=c("pathologic_stage", "Stage II", "Stage I", "Stage IV"),
-logrisk=T,
-average="median")
-
+logrisk=T, average="median")
+}
 
 }

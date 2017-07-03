@@ -1,10 +1,10 @@
-#' Title
+#' Create a Kaplan Meier Estimator by using a TCGA Dataset
 #'
 #' @param x a character vector with 1 or more gene names
 #' @param Eset An Expression Set
 #' @param value Defines the value to subdivide the gene expression groups.
 #' Numeric: Devided into two groups
-#' "q": 25% quantile, 25-75% quantile and 75% quantile
+#' "q": 25 \% quantile, 25-75 \% quantile and 75 \% quantile
 #' @param additional Additional covariate to subset groups
 #' @param exclude Factors of the covariates to exclude
 #' @param p.val display the p-Value on the graph
@@ -15,14 +15,19 @@
 #' @param durchschnitt for more than one gene, how the value of the averaged z-score is calculated, either median or mean
 #' @param optimal calculate the optimal cutpoint, will overide the value value when numeric, does not work when value = "q"
 #' @param plot_cutpoint Plot the graph how the optimal cutpoint was calculated, normal survival plot will be REPLACED by surv_cutpoint: Determine the optimal cutpoint for each variable using ’maxstat’
-#' @param ...
+#' @param ... additional variables that can be added
 #'
 #' @return A survival Estimator
 #' @export
 #'
-#' @examples Survival_adaptable(x = c("FOXA2"), Eset = Eset, value = 0,
-#' additional = "pathologic_stage", exclude = c("Stage IV"), zscore=T, p.val=TRUE,
-#' xlabel="Days", legend_position = "top", durchschnitt = "median", optimal=T, plot_cutpoint=F)
+#' @examples
+#' \dontrun{
+#' Survival_adaptable(x = c("FOXA2"), Eset = Eset,
+#' value = 0, additional = "pathologic_stage",
+#' exclude = c("Stage IV"), p.val=TRUE,
+#' xlabel="Days", legend_position = "top", durchschnitt = "median",
+#' optimal=T, plot_cutpoint=F)
+#' }
 Survival_adaptable <- function (x, Eset,
                                 value = 0,
                                 additional,
@@ -39,12 +44,16 @@ Survival_adaptable <- function (x, Eset,
     stop("You have to define a gene you want to calculate survival")
   }
 
-  time <- pData(Eset)$X_OS
-  event <- pData(Eset)$X_OS_IND
+  time <- Biobase::pData(Eset)$X_OS
+  event <- Biobase::pData(Eset)$X_OS_IND
   gene <- x
 
-  if (missing(xlabel)) xlabel <- "time"
-  if (missing(ylabel)) ylabel <- "Survival"
+  if (missing(xlabel)){
+    xlabel <- "time"
+  }
+  if (missing(ylabel)){
+    ylabel <- "Survival"
+  }
 
   # get the data to the Surv variables
   # Adding a column with gene expression labels to the phenotype, updates if new values
@@ -53,15 +62,15 @@ Survival_adaptable <- function (x, Eset,
   if(length(gene)>1){
 
     z <- data.frame(time = time, event = event)
-    z[,gene] <- t(exprs(kikaEset)[gene,])
-    rownames(z) <- colnames(exprs(kikaEset)[gene,])
+    z[,gene] <- t(Biobase::exprs(Eset)[gene,])
+    rownames(z) <- colnames(Biobase::exprs(Eset)[gene,])
 
   } else {
-    if(!gene %in% rownames(exprs(kikaEset))){
+    if(!gene %in% rownames(Biobase::exprs(Eset))){
       stop(paste(gene, "not in gene list"))
     }
-    z[,gene] <- exprs(kikaEset)[gene,]
-    rownames(z) <- colnames(exprs(kikaEset)[gene,])
+    z[,gene] <- Biobase::exprs(Eset)[gene,]
+    rownames(z) <- colnames(Biobase::exprs(Eset)[gene,])
   }
 
   if (missing(additional)){
@@ -70,10 +79,10 @@ Survival_adaptable <- function (x, Eset,
     z$additional <- 0
   } else if (additional==""){
     z$additional <- 0
-  } else if (!additional %in% colnames(pData(kikaEset))){
+  } else if (!additional %in% colnames(Biobase::pData(Eset))){
     stop(paste(additional, "not in phenotype list"))
   } else {
-    z$additional <- pData(kikaEset)[,additional]
+    z$additional <- Biobase::pData(Eset)[,additional]
   }
 
   # Get rid of empty rows
@@ -95,28 +104,28 @@ Survival_adaptable <- function (x, Eset,
 
   if(length(gene)>1){
 
-    ## Z-Score with more than 1 gene:
+    ## Z-Score + normalization has already been done for the geneset itself
 
-    for(i in 3:(length(z)-1)){
-      Z_score_1 <- z[,i] - mean(z[,i])
-      Z_score <- Z_score_1 / sd(z[,i])
-      z[,i] <- Z_score
-    }
+ #   for(i in 3:(length(z)-1)){
+ #     Z_score_1 <- z[,i] - mean(z[,i])
+ #     Z_score <- Z_score_1 / stats::sd(z[,i])
+ #     z[,i] <- Z_score
+ #   }
 
     df_matrix <- matrix(t(z[,gene]), ncol = length(gene), byrow=TRUE)
 
-    z$Median <- rowMedians(df_matrix)
-    z$Mean <- rowMeans(df_matrix)
+    z$Median <- Biobase::rowMedians(df_matrix)
+    z$Mean <- base::rowMeans(df_matrix)
 
     if(value!="q"){
       if(optimal){
-        value_cutpoint <- surv_cutpoint(z, time="time", event="event", variables = gene)
+        value_cutpoint <- survminer::surv_cutpoint(z, time="time", event="event", variables = gene)
         value_sum <- summary(value_cutpoint)
         value <- value_sum$cutpoint
         value <- mean(value)
         if(plot_cutpoint){
-          par(mfrow=c(2,1))
-          return(plot(value_cutpoint, gene, palette = "npg"))
+          graphics::par(mfrow=c(2,1))
+          return(graphics::plot(value_cutpoint, gene, palette = "npg"))
         }
       }
       z$gene <- ifelse(z$Median > value, "High Expression", "Low Expression")
@@ -125,25 +134,25 @@ Survival_adaptable <- function (x, Eset,
       if(optimal){
         stop("optimal cutpoint not possible if separation of patients by quantiles")
       }
-      quantile_values <- quantile(z$Median, c(.25, .50, .75))
+      quantile_values <- stats::quantile(z$Median, c(.25, .50, .75))
       z$gene <- ifelse(z$Median < quantile_values[1], "Lower Quantile", ifelse(z$Median < quantile_values[3], "Intermediate", "Upper Quantile"))
     }
     z$gene <- as.factor(z$gene)
 
 
   } else {
-    ## Z-Score only 1 gene:
-    Z_score_1 <- z[,3] - mean(z[,3])
-    Z_score <- Z_score_1 / sd(z[,3])
-    z[,3] <- Z_score
+    ## Z-Score + normalization has already been done for the geneset itself
+   # Z_score_1 <- z[,3] - mean(z[,3])
+   # Z_score <- Z_score_1 / stats::sd(z[,3])
+   # z[,3] <- Z_score
 
     if(value!="q"){
       if(optimal){
-        value_cutpoint <- surv_cutpoint(z, time="time", event="event", variables = gene)
+        value_cutpoint <- survminer::surv_cutpoint(z, time="time", event="event", variables = gene)
         value_sum <- summary(value_cutpoint)
         value <- value_sum$cutpoint
         if(plot_cutpoint){
-          p <- plot(value_cutpoint, gene, palette = "npg")
+          p <- graphics::plot(value_cutpoint, gene, palette = "npg")
           return(p)
         }
       }
@@ -152,7 +161,7 @@ Survival_adaptable <- function (x, Eset,
       if(optimal){
         stop("optimal cutpoint not possible if separation of patients by quantiles")
       }
-      quantile_values <- quantile(z[,3], c(.25, .50, .75))
+      quantile_values <- stats::quantile(z[,3], c(.25, .50, .75))
       z$gene <- ifelse(z[, 3] < quantile_values[1], "Lower Quantile", ifelse(z[, 3] < quantile_values[3], "Intermediate", "Upper Quantile"))
     }
   }
@@ -165,17 +174,17 @@ Survival_adaptable <- function (x, Eset,
     }
     if(durchschnitt=="mean"){
       z <- z[order(z$Mean), ]
-      coxph1 <- coxph(Surv(time, event) ~ Mean, data = z)
+      coxph1 <- survival::coxph(survival::Surv(time, event) ~ Mean, data = z)
     } else {
       z <- z[order(z$Median), ]
-      coxph1 <- coxph(Surv(time, event) ~ Median, data = z)
+      coxph1 <- survival::coxph(survival::Surv(time, event) ~ Median, data = z)
     }
   } else {
     z <- z[!is.na(z$gene), ]
     z <- z[order(z$gene), ]
-    coxph1 <- coxph(Surv(time, event) ~ gene, data = z)
+    coxph1 <- survival::coxph(survival::Surv(time, event) ~ gene, data = z)
   }
-  coeffs <- coef(summary(coxph1))
+  coeffs <- stats::coef(summary(coxph1))
 
   if(p.val==TRUE){
 
@@ -185,8 +194,8 @@ Survival_adaptable <- function (x, Eset,
     # and corresponds to the log-rank test. The Peto& Peto modi cation of the Gehan-Wilcoxon test
     # is computed using rho=1
 
-    p_value_survdiff <- survdiff(Surv(time, event) ~ gene, data = z, rho=1)
-    p.value = 1 - pchisq(p_value_survdiff$chisq, length(p_value_survdiff$n) - 1)
+    p_value_survdiff <- survival::survdiff(survival::Surv(time, event) ~ gene, data = z, rho=1)
+    p.value = 1 - stats::pchisq(p_value_survdiff$chisq, length(p_value_survdiff$n) - 1)
   }
 
   if (z$additional[1]!=0){
@@ -199,7 +208,7 @@ Survival_adaptable <- function (x, Eset,
 
     # t 1/2
 
-    median_survival <- survfit(Surv(time, event) ~ gene + additional, data = z)
+    median_survival <- survival::survfit(survival::Surv(time, event) ~ gene + additional, data = z)
     median_survival_df <- summary(median_survival)
     #     median_survival_df$table[i,"median"]
 
@@ -231,11 +240,11 @@ Survival_adaptable <- function (x, Eset,
     #survival function:
 
     #fit <- survfit(Surv(time, event) ~ gene + additional, data = z,
-    fit <- survfit(Surv(time, event) ~ gene + additional, data = z,
+    fit <- survival::survfit(survival::Surv(time, event) ~ gene + additional, data = z,
                    type="kaplan-meier",
                    conf.type="log")
 
-    p <- ggsurvplot(
+    p <- survminer::ggsurvplot(
       fit,                     # survfit object with calculated statistics.
       data=z,
       surv.scale = c("percent"),
@@ -249,7 +258,8 @@ Survival_adaptable <- function (x, Eset,
       pval.method = TRUE,
       #log.rank.weights = "n",
       conf.int = F,         # show confidence intervals for point estimaes of survival curves.
-
+      xlab = xlabel,
+      ylab = ylabel,
       risk.table = TRUE,       # show risk table.
       risk.table.y.text.col = T, # colour risk table text annotations.
       risk.table.y.text = F, # show bars instead of names in text annotations in legend of risk table
@@ -269,7 +279,7 @@ Survival_adaptable <- function (x, Eset,
 
     # t 1/2
 
-    median_survival <- survfit(Surv(time, event) ~ gene, data = z)
+    median_survival <- survival::survfit(survival::Surv(time, event) ~ gene, data = z)
     median_survival_df <- summary(median_survival)
     #     median_survival_df$table[i,"median"]
 
@@ -305,12 +315,12 @@ Survival_adaptable <- function (x, Eset,
 
     # Get p value for the difference of the gene and plot them on the graph
 
-    fit <- survfit(Surv(time = time,
+    fit <- survival::survfit(survival::Surv(time = time,
                         event = event) ~ gene,
                    data = z,
                    type="kaplan-meier",
                    conf.type="log")
-    p <- ggsurvplot(
+    p <- survminer::ggsurvplot(
       fit,                     # survfit object with calculated statistics.
       data=z,
       surv.scale = c("percent"),
@@ -324,7 +334,8 @@ Survival_adaptable <- function (x, Eset,
       pval.method = TRUE,
       #log.rank.weights = "n",
       conf.int = F,         # show confidence intervals for point estimaes of survival curves.
-
+      xlab = xlabel,
+      ylab = ylabel,
       risk.table = TRUE,       # show risk table.
       risk.table.y.text.col = T, # colour risk table text annotations.
       risk.table.y.text = F, # show bars instead of names in text annotations in legend of risk table
