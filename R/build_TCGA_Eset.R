@@ -170,6 +170,7 @@ clinical1$age <- floor(-as.numeric(clinical1$patient.days_to_birth)/365.2422)
 #### take identical patient samples ####
 # get patient IDs that are in both clinical and expression data
 
+
 names_clinical <- rownames(clinical1)
 names_genomic <- colnames(expressionData)
 
