@@ -5,7 +5,7 @@ testset <- build_TCGA_Eset(clinical_file = "../../../Projects/TCGA-Elisa/Clinica
                            expression_file = "../../../Projects/TCGA-Elisa/RNA_KIRC/KIRC.rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.data.txt")
 
 ## add the mutation data
-mutset <- fetch_TCGA_mutations(path = "../../../Projects/TCGA-Elisa/LAML.Mutation_Packager_Calls/", Eset = testset)
+mutset <- fetch_TCGA_mutations(path = "../../../Projects/TCGA-Elisa/KIRC.Mutation_Packager_Oncotated_Calls/", Eset = testset)
 
 
 # mutation: a vector containing the names of the mutation
