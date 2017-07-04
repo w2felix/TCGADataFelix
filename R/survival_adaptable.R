@@ -40,6 +40,8 @@ Survival_adaptable <- function (x, Eset,
                                 average = "mean",
                                 optimal = FALSE,
                                 plot_cutpoint=FALSE, ...) {
+
+
   if (missing(x)) {
     stop("You have to define a gene you want to calculate survival")
   }
@@ -255,6 +257,8 @@ Survival_adaptable <- function (x, Eset,
       Nameing_vector_all <- c(paste(numbers_quantiles[,2], " - ", additional, ": ", numbers_quantiles[,1], "; n = ", numbers_quantiles[,3], "; t1/2 = ",     median_survival_df$table[,"median"], sep=""))
       Nameing_vector <- c(paste(numbers_quantiles[,2], " Expression - ", additional, ": ", numbers_quantiles[,1], sep=""))
 
+      Nameing_vector_all <- Nameing_vector[numbers_quantiles$Freq!=0]
+      Nameing_vector <- Nameing_vector[numbers_quantiles$Freq!=0]
 
       if(length(gene)>1){
         label_mean <- ifelse(average=="mean","Mean","Median")
@@ -283,9 +287,13 @@ Survival_adaptable <- function (x, Eset,
         median_survival_df <- summary(median_survival)
         #     median_survival_df$table[i,"median"]
 
+
         numbers_quantiles <- data.frame(table(z$additional, z[,x]))
         Nameing_vector_all <- c(paste(numbers_quantiles[,2], " - ", additional, ": ", numbers_quantiles[,1], "; n = ", numbers_quantiles[,3], "; t1/2 = ", median_survival_df$table[,"median"], sep=""))
         Nameing_vector <- c(paste(numbers_quantiles[,2], "  - ", additional, ": ", numbers_quantiles[,1], sep=""))
+
+        Nameing_vector_all <- Nameing_vector[numbers_quantiles$Freq!=0]
+        Nameing_vector <- Nameing_vector[numbers_quantiles$Freq!=0]
 
         gene_name <- x
       }
@@ -316,7 +324,7 @@ Survival_adaptable <- function (x, Eset,
       # xlim = c(0,2000),        # present narrower X axis, but not affect survival estimates.
       break.time.by = 500,     # break X axis in time intervals by 500.
 
-      pval = TRUE,             # show p-value of log-rank test.
+      pval = p.val,             # show p-value of log-rank test.
       pval.method = TRUE,
       #log.rank.weights = "n",
       conf.int = F,         # show confidence intervals for point estimaes of survival curves.
@@ -427,7 +435,7 @@ Survival_adaptable <- function (x, Eset,
       # xlim = c(0,2000),        # present narrower X axis, but not affect survival estimates.
       break.time.by = 500,     # break X axis in time intervals by 500.
 
-      pval = TRUE,             # show p-value of log-rank test.
+      pval = p.val,             # show p-value of log-rank test.
       pval.method = TRUE,
       #log.rank.weights = "n",
       conf.int = F,         # show confidence intervals for point estimaes of survival curves.

@@ -19,11 +19,11 @@ fetch_TCGA_mutations <- function(path,
              ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
 
   filenames <- filenames[grepl("(TCGA)",filenames)]
-  patientnames <- substr(patientnames, 1, 12)
+  patientnames <- substr(filenames, 1, 12)
 
   patients <- list()
   mutation_file <- paste(path,filenames,sep="")
-  patients = lapply(mutation_file, read.delim)
+  patients = lapply(mutation_file, utils::read.delim)
 
   names(patients) <- patientnames
 
