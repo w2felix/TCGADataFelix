@@ -1,5 +1,5 @@
-#' add a mutation column to the patient data
-#'
+#' Add an Mutation Column to an Expression set made by build_TCGA_Eset() from TCGA Mutation Data, downloaded from https://gdac.broadinstitute.org/
+#' Please download the Mutation_Packager_Oncotated_Calls
 #'
 #' @param path Path to the mutation Files downloaded from Firehose TCGA
 #' @param Eset Eset that will be used
@@ -7,7 +7,7 @@
 #' @return Returns the Expression Set with added mutation data
 #' @export
 #'
-#' @examples fetch_TCGA_mutations(path = "../../../Projects/TCGA-Elisa/LAML.Mutation_Packager_Calls/", Eset = Eset)
+#' @examples mutset <- fetch_TCGA_mutations(path = "../../../Projects/TCGA-Elisa/KIRC.Mutation_Packager_Oncotated_Calls/", Eset = Eset)
 #'
 #'
 #'
@@ -23,7 +23,7 @@ fetch_TCGA_mutations <- function(path,
 
   patients <- list()
   mutation_file <- paste(path,filenames,sep="")
-  patients = lapply(mutation_file, utils::read.delim)
+  patients = lapply(mutation_file, utils::read.delim, skip = 3)
 
   names(patients) <- patientnames
 

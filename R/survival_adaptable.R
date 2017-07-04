@@ -39,7 +39,8 @@ Survival_adaptable <- function (x, Eset,
                                 legend_position,
                                 average = "mean",
                                 optimal = FALSE,
-                                plot_cutpoint=FALSE, ...) {
+                                plot_cutpoint=FALSE,
+                                ...) {
 
 
   if (missing(x)) {

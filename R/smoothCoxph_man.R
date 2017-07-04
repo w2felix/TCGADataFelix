@@ -2,7 +2,7 @@
 #'
 #' @param x 1 or multiple Genes, as a character vector list, to analyze
 #' @param Eset The Expression Set, containing the expression data in columns and the survival indicators in the columns X_OS and X_OS_IND
-#' @param exclude_values c("where to look for exclusion", "exclude group 1", "exclude group 2", ...)
+#' @param exclude_values add a vector with following style c("column of clinical data to look for exclusion", "exclude group 1 from this column", "exclude group 2 from this column", ...)
 #' @param xlimit Manually define the x-axis limit
 #' @param ylimit Manually define the y-axis limit
 #' @param xlabel Manually define the x-axis label
