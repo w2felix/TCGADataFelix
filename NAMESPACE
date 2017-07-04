@@ -2,6 +2,7 @@
 
 export(Survival_adaptable)
 export(build_TCGA_Eset)
+export(fetch_TCGA_mutations)
 export(hazard_list)
 export(smoothCoxph_man)
 importFrom(dplyr,"%>%")

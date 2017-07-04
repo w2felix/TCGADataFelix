@@ -19,7 +19,7 @@ Numeric: Devided into two groups
 
 \item{additional}{Additional covariate to subset groups}
 
-\item{exclude}{Factors of the covariates to exclude}
+\item{exclude}{Factors to exclude, when no gene is entered but another factor from the clinical patient data, it can also be excluded, the order of the to be exlcuded variables does not matter.}
 
 \item{p.val}{display the p-Value on the graph}
 

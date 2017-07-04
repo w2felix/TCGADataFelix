@@ -6,7 +6,7 @@
 #' Numeric: Devided into two groups
 #' "q": 25 \% quantile, 25-75 \% quantile and 75 \% quantile
 #' @param additional Additional covariate to subset groups
-#' @param exclude Factors of the covariates to exclude
+#' @param exclude Factors to exclude, when no gene is entered but another factor from the clinical patient data, it can also be excluded, the order of the to be exlcuded variables does not matter.
 #' @param p.val display the p-Value on the graph
 #' @param xlabel User defined x-axis label
 #' @param ylabel User defined y-axis label
@@ -277,8 +277,6 @@ Survival_adaptable <- function (x, Eset,
       } else {
         gene_name <- gene[1]
       }
-
-
 
      } else {
         median_survival <- survival::survfit(survival::Surv(time, event) ~ factor + additional, data = z2)
