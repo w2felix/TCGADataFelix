@@ -28,7 +28,12 @@ colnames(clinical1) <- clinical1[1,]
 clinical1 <- clinical1[-1,]
 rownames(clinical1) <- toupper(clinical1$patient.bcr_patient_barcode)
 
-# View(clinical1)
+# remove emtpy columns
+
+new_pData <- sapply(clinical1, function (k) all(is.na(k)))
+clinical2 <- clinical1[!new_pData]
+
+# View(clinical2)
 
 ### Import Expression Data
 expressiondata <- as.data.frame(readr::read_delim(expression_file,
@@ -90,7 +95,7 @@ colnames(expression_removed_vm_zscore) <- gsub('\\.','-',substr(colnames(express
 
 # do clinical data fit the expression data?
 
-# colnames(expression_removed_vm_zscore) %in% rownames(clinical1)
+# colnames(expression_removed_vm_zscore) %in% rownames(clinical2)
 
 # set the rownames keeping only gene name (otherwise the old rownames are still in the expression_removed_vm)
 # take care not to have duplicates:
@@ -106,16 +111,16 @@ expressionData <- expression_removed_vm_zscore
 #### match the patient ID in clinical data with the colnames of expression_removed_vm_zscore
 
 # create vector for death censoring
-# table(clinical1$patient.vital_status)
+# table(clinical2$patient.vital_status)
 
 # alive  dead
 # 67   133
 
-clinical1$X_OS_IND <- ifelse(clinical1$patient.vital_status == 'alive', 0,1)
+clinical2$X_OS_IND <- ifelse(clinical2$patient.vital_status == 'alive', 0,1)
 
 
-ind_keep <- grep('days_to_death',colnames(clinical1))
-death <- as.matrix(clinical1[,ind_keep])
+ind_keep <- grep('days_to_death',colnames(clinical2))
+death <- as.matrix(clinical2[,ind_keep])
 
 death_collapsed <- c()
 for (i in 1:dim(death)[1]){
@@ -128,9 +133,9 @@ for (i in 1:dim(death)[1]){
 }
 
 # and days last follow up here we take the most recent which is the max number
-ind_keep <- grep('days_to_last_followup',colnames(clinical1))
+ind_keep <- grep('days_to_last_followup',colnames(clinical2))
 # View(fl)
-fl <- as.matrix(clinical1[,ind_keep])
+fl <- as.matrix(clinical2[,ind_keep])
 fl_collapsed <- c()
 for (i in 1:dim(fl)[1]){
   if ( sum(is.na(fl[i,])) < dim(fl)[2]){
@@ -144,7 +149,7 @@ for (i in 1:dim(fl)[1]){
 # and put everything together
 all_clin <- data.frame(death_collapsed,fl_collapsed)
 colnames(all_clin) <- c('death_days', 'followUp_days')
-rownames(all_clin) <- rownames(clinical1)
+rownames(all_clin) <- rownames(clinical2)
 
 all_clin %>% dplyr::mutate_if(is.factor, as.character) -> all_clin_1
 all_clin_1 %>% dplyr::mutate_if(is.character, as.numeric) -> all_clin_2
@@ -154,15 +159,15 @@ for (i in 1:length(all_clin_2$death_days)){
   all_clin_2$new_death[i] <- ifelse(is.na(all_clin_2$death_days[i]),
                                     all_clin_2$followUp_days[i],all_clin_2$death_days[i])
 }
-rownames(all_clin_2) <- rownames(clinical1)
+rownames(all_clin_2) <- rownames(clinical2)
 
-clinical1$X_OS <- all_clin_2$new_death
+clinical2$X_OS <- all_clin_2$new_death
 
 # add age:
-clinical1$age <- floor(-as.numeric(clinical1$patient.days_to_birth)/365.2422)
+clinical2$age <- floor(-as.numeric(clinical2$patient.days_to_birth)/365.2422)
 
 
-# View(clinical1[,c("X_OS","X_OS_IND","patient.follow_ups.follow_up-2.days_to_last_followup","patient.follow_ups.follow_up.days_to_death", "patient.follow_ups.follow_up.vital_status" )])
+# View(clinical2[,c("X_OS","X_OS_IND","patient.follow_ups.follow_up-2.days_to_last_followup","patient.follow_ups.follow_up.days_to_death", "patient.follow_ups.follow_up.vital_status" )])
 
 
 ##### make expression set:
@@ -171,7 +176,7 @@ clinical1$age <- floor(-as.numeric(clinical1$patient.days_to_birth)/365.2422)
 # get patient IDs that are in both clinical and expression data
 
 
-names_clinical <- rownames(clinical1)
+names_clinical <- rownames(clinical2)
 names_genomic <- colnames(expressionData)
 
 names_match_genomic <- match(names_clinical,names_genomic)
@@ -185,7 +190,7 @@ names_match_clinical <- match(names_genomic_ordered,names_clinical)
 na_names.match_clinical <- stats::na.omit(names_match_clinical)
 na_c_names.match_clinical <- as.numeric(na_names.match_clinical)
 
-clinical_ordered <- clinical1[na_c_names.match_clinical, ]
+clinical_ordered <- clinical2[na_c_names.match_clinical, ]
 
 # Add a column of a gene with self defined cut off values
 

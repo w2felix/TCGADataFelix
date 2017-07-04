@@ -15,5 +15,6 @@ Imports: ggplot2,
     stats,
     graphics,
     readr,
-    limma
+    limma,
+    dplyr
     

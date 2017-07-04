@@ -19,7 +19,8 @@ Create an Expression Set from TCGA Data, downloaded from https://gdac.broadinsti
 }
 \examples{
 \dontrun{
-build_TCGA_Eset(clinical_file = "../../../Projects/TCGA-Elisa/Clinical/LAML.clin.merged.txt", expression_file = "../../../Projects/TCGA-Elisa/RNA/LAML.rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.data.txt")
+build_TCGA_Eset(clinical_file = "../../../Projects/TCGA-Elisa/Clinical/LAML.clin.merged.txt",
+expression_file = "../../../Projects/TCGA-Elisa/RNA/LAML.rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.data.txt")
 }
 
 }

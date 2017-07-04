@@ -89,15 +89,15 @@ smoothCoxph_man <- function (x, Eset, exclude_values,
     }
     if(average=="mean"){
       z <- z[order(z$Mean), ]
-      coxph1 <- survival::coxph(survival::Surv(time, event) ~ pspline(Mean, df = 4), data = z)
+      coxph1 <- survival::coxph(survival::Surv(time, event) ~ survival::pspline(Mean, df = 4), data = z)
     } else {
       z <- z[order(z$Median), ]
-      coxph1 <- survival::coxph(survival::Surv(time, event) ~ pspline(Median, df = 4), data = z)
+      coxph1 <- survival::coxph(survival::Surv(time, event) ~ survival::pspline(Median, df = 4), data = z)
     }
   } else {
     z <- z[!is.na(z$x), ]
     z <- z[order(z$x), ]
-    coxph1 <- survival::coxph(survival::Surv(time, event) ~ pspline(x, df = 4), data = z)
+    coxph1 <- survival::coxph(survival::Surv(time, event) ~ survival::pspline(x, df = 4), data = z)
   }
 
   if (logrisk) {
