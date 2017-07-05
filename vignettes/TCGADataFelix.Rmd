@@ -103,7 +103,7 @@ pData(mutset)[,paste(mutation,"status")] <- ifelse(grepl(mutation,pData(mutset)$
 ```
 
 ## Do a survival analysis using **Survival_adaptable()** 
-```{r, fig.width=6,fig.height=4}
+```{r, fig.width=8,fig.height=6}
 Survival_adaptable(x = c(gene), 
                    Eset = mutset,
                    additional = paste(mutation,"status"),
@@ -149,7 +149,7 @@ This would exclude histological grades g1 and gx from x and old from the additio
 **x has to have at least two factors remaining for survival analysis**
 
 Example 1:
-```{r, fig.width=6,fig.height=4}
+```{r, fig.width=8,fig.height=6}
 Survival_adaptable(x = c("patient.neoplasm_histologic_grade"), Eset = mutset,
                    p.val=F,
                    xlabel="Days",
@@ -164,7 +164,7 @@ Survival_adaptable(x = c("patient.neoplasm_histologic_grade"), Eset = mutset,
 ```
 
 Example 2:
-```{r, fig.width=6,fig.height=4}
+```{r, fig.width=8,fig.height=6}
 Survival_adaptable(x = c("patient.gender"), Eset = mutset,
                    p.val=F,
                    xlabel="Days",
@@ -184,7 +184,7 @@ pData(mutset)[,"Age category"] <- ifelse(pData(mutset)$age > 65,"old","young")
 ```
 
 Example:
-```{r, fig.width=6,fig.height=4}
+```{r, fig.width=8,fig.height=6}
 Survival_adaptable(x = c("Age category"), Eset = mutset,
                    p.val=TRUE,
                    xlabel="Days",
@@ -210,7 +210,7 @@ For example:
 The legend can be put in two or more rows using the `legend_rows` parameter.
 
 **The risk table does not work with ggpar()**
-```{r, fig.width=6,fig.height=4}
+```{r, fig.width=8,fig.height=6}
 library(ggpubr)
 
 p <- Survival_adaptable(x = c("Age category"), Eset = mutset,
