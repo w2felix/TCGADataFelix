@@ -30,6 +30,10 @@ mutation_data <- "KIRC.Mutation_Packager_Oncotated_Calls/"
         # mutation_classification: a vector containing the mutation classifications
         # variant_type: a vector containing the variant types
 
+      # Overview over the type and number of mutations in the dataset
+
+      head(sort(table(unlist(strsplit(pData(mutset)$mutation, " ")),useNA="no"), decreasing=T), n= 20L)
+
 ### Edit here:
 
 gene <- "FOXD1"

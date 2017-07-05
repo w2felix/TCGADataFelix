@@ -17,4 +17,6 @@ Imports: ggplot2,
     readr,
     limma,
     dplyr
-    
+Suggests: knitr,
+    rmarkdown
+VignetteBuilder: knitr

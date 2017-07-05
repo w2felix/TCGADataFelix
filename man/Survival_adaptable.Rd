@@ -5,8 +5,9 @@
 \title{Create a Kaplan Meier Estimator by using a TCGA Dataset}
 \usage{
 Survival_adaptable(x, Eset, value = 0, additional, exclude, p.val = FALSE,
-  xlabel, ylabel, logrisk = TRUE, legend_position, average = "mean",
-  optimal = FALSE, plot_cutpoint = FALSE, ...)
+  xlabel, ylabel, logrisk = TRUE, legend_position, legend_rows = 1,
+  average = "mean", optimal = FALSE, plot_cutpoint = FALSE,
+  risk_table = TRUE, plot_title = "", ...)
 }
 \arguments{
 \item{x}{a character vector with 1 or more gene names or a column of the clinical patient data}
@@ -31,11 +32,17 @@ Numeric: Devided into two groups
 
 \item{legend_position}{where should the legend be? doesn't work with theme_bw}
 
+\item{legend_rows}{How many rows are used for the legend}
+
 \item{average}{for more than one gene, how the value of the averaged z-score is calculated, either median or mean}
 
 \item{optimal}{calculate the optimal cutpoint, will overide the value value when numeric, does not work when value = "q"}
 
 \item{plot_cutpoint}{Plot the graph how the optimal cutpoint was calculated, normal survival plot will be REPLACED by surv_cutpoint: Determine the optimal cutpoint for each variable using ’maxstat’}
+
+\item{risk_table}{If the risk table is shown or not, use FALSE or TRUE}
+
+\item{plot_title}{Title of the Plot, if not stated, no title will be shown}
 
 \item{...}{additional variables that can be added}
 }
@@ -51,6 +58,6 @@ Survival_adaptable(x = c("FOXA2"), Eset = Eset,
 value = 0, additional = "pathologic_stage",
 exclude = c("Stage IV"), p.val=TRUE,
 xlabel="Days", legend_position = "top", average = "median",
-optimal=T, plot_cutpoint=F)
+optimal=T, plot_cutpoint=F,risk_table=TRUE)
 }
 }

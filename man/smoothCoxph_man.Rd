@@ -12,7 +12,7 @@ smoothCoxph_man(x, Eset, exclude_values, xlimit, ylimit, xlabel, ylabel,
 
 \item{Eset}{The Expression Set, containing the expression data in columns and the survival indicators in the columns X_OS and X_OS_IND}
 
-\item{exclude_values}{c("where to look for exclusion", "exclude group 1", "exclude group 2", ...)}
+\item{exclude_values}{add a vector with following style c("column of clinical data to look for exclusion", "exclude group 1 from this column", "exclude group 2 from this column", ...)}
 
 \item{xlimit}{Manually define the x-axis limit}
 

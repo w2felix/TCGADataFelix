@@ -1,0 +1,268 @@
+---
+title: "How to work with the TCGADataFelix package"
+author: "Felix Geist"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## General Purpose
+
+The package was written to simplify the analysis of the TCGA / GDAC Datasets, as most of the availible packages don't work so far. The analysis is based on the explanation of TriS on Biostars.org: https://www.biostars.org/p/153013/
+
+So what kind of Data needs to be downloaded?
+Using the GDAC firebrowse (http://gdac.broadinstitute.org/), one can get access to the curated level 3 data of the TCGA / GDAC consortium and download it.
+
+For the clinical data please download:
+
+`clinical merged data`
+
+For the expression data please download:
+
+`"illuminahiseq rnaseqv Level 3 RSEM genes normalized" data`
+
+If you want to include mutational data, please download:
+
+`Mutation Packager Oncotated Calls`
+
+# How to use the package:
+
+Load the package
+
+```{r message=FALSE}
+library(TCGADataFelix)
+
+# for the expressionset functions:
+library(Biobase)
+
+# for the modification of the output
+library(ggplot2)
+```
+
+Define filepath for TCGA patient data downloaded from:
+
+Have **one folder each** for clinical data, one for expression data and one for the mutational data.
+
+```{r}
+filepath <- "../../../../Projects/TCGA-Elisa/"
+
+# The filename of the clinical data
+clinical_data <- "Clinical_KIRC/KIRC.clin.merged.txt"  
+
+# The filename of the expression data
+expression_data <- "RNA_KIRC/KIRC.rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.data.txt"
+
+# The Folder of the mutation data (each patient has one file)
+mutation_data <- "KIRC.Mutation_Packager_Oncotated_Calls/"
+```
+
+## Load the expression Data using **build_TCGA_Eset()**:
+```{r warning=FALSE, message=FALSE}
+Eset <- build_TCGA_Eset(clinical_file = paste(filepath,clinical_data, sep = ""),
+                        expression_file = paste(filepath,expression_data, sep = ""))
+```
+
+## Add the mutation data using **fetch_TCGA_mutations()**
+```{r}
+mutset <- fetch_TCGA_mutations(path = paste(filepath,mutation_data,sep=""), Eset = Eset)
+```     
+
+
+### Newly added columns to the clinical data by the *fetch_TCGA_mutations()* function
+Columns are added to: pData(Eset)
+
+* mutation: a vector containing the names of the mutation
+* mutation_classification: a vector containing the mutation classifications
+* variant_type: a vector containing the variant types
+
+# Use and analyze the data
+
+To get an overview over the type and number of mutations in the dataset
+```{r}
+head(sort(table(unlist(strsplit(pData(mutset)$mutation, " ")),useNA="no"), decreasing=T), n= 30L)
+```
+
+Define now, what you want to analyze:
+```{r}
+gene <- "FOXD1"
+mutation <- "PBRM1"
+```
+
+Add a factorized column of mutations needed for the survival analysis to the clinical data.
+Silent mutations are not included in the analysis:
+```{r}
+pData(mutset)[,paste(mutation,"status")] <- ifelse(grepl(mutation,pData(mutset)$mutation) & pData(mutset)$mutation != "Silent","mutated","wt")
+
+```
+
+## Do a survival analysis using **Survival_adaptable()** 
+```{r, fig.width=6,fig.height=4}
+Survival_adaptable(x = c(gene), 
+                   Eset = mutset,
+                   additional = paste(mutation,"status"),
+                   p.val=F,
+                   xlabel="Days",
+                   legend_position = "top",
+                   average = "median",
+                   optimal=F,
+                   plot_cutpoint=F,
+                   plot_title = paste("Kaplan Meier Estimator of", gene, "Expression and", mutation, "\nstatus in ccRCC (KIRC, TCGA)")
+                   )
+```
+
+We can analyze now various different things, e.g. expression of different genes or categories from the clinical data table, such as treatment schemes etc.
+
+### Examples for *x* and *additional*:
+
+Variable  | input
+----------| ---------
+x         | one gene using `"gene"`
+x         | multiple genes using `c("gene1","gene2","gene3",...)`
+x         | a factor from the clinical dataset, e.g.: `"patient.neoplasm_histologic_grade"`
+additional  | a factor from the clinical dataset, e.g.: `"patient.neoplasm_histologic_grade"`
+additional  | multiple factors from the clinical dataset, e.g. `c("grade","age")`
+additional  | factorized mutations using: `paste(mutation,"status")`
+
+### Examples for *exclude*
+
+You can exclude single factors from either *x* or *additional* by using the parameter `exclude = "exclude1"` or multiple factors using `exclude = c("exlude1","exclude2")`
+
+e.g.: 
+
+> additional = "patient.neoplasm_histologic_grade"  
+exclude = c("g1","gx")
+
+This would exclude the histologic grades g1 and gx from additional
+
+> x = c("patient.neoplasm_histologic_grade")  
+additional = "age"  
+exclude = c("g1","gx", "old")
+
+This would exclude histological grades g1 and gx from x and old from the additional age factor.  
+**x has to have at least two factors remaining for survival analysis**
+
+Example 1:
+```{r, fig.width=6,fig.height=4}
+Survival_adaptable(x = c("patient.neoplasm_histologic_grade"), Eset = mutset,
+                   p.val=F,
+                   xlabel="Days",
+                   legend_position = "right",
+                   average = "median",
+                   optimal=T,
+                   plot_cutpoint=F,
+                   additional = "patient.gender",
+                   exclude=c("gx","g1","male"),
+                  plot_title = paste("Kaplan Meier Estimator of histologic grade and patient gender \nin ccRCC (KIRC, TCGA)")
+)
+```
+
+Example 2:
+```{r, fig.width=6,fig.height=4}
+Survival_adaptable(x = c("patient.gender"), Eset = mutset,
+                   p.val=F,
+                   xlabel="Days",
+                   legend_position = "right",
+                   average = "median",
+                   optimal=T,
+                   plot_cutpoint=F,
+                   additional = paste(mutation,"status"),
+                   exclude=c("gx","g1"),
+                   plot_title = paste("Kaplan Meier Estimator of patient gender and", mutation, "\nstatus in ccRCC (KIRC, TCGA)")
+                   )
+```
+
+##Add additional categories, e.g. age:
+```{r}
+pData(mutset)[,"Age category"] <- ifelse(pData(mutset)$age > 65,"old","young")
+```
+
+Example:
+```{r, fig.width=6,fig.height=4}
+Survival_adaptable(x = c("Age category"), Eset = mutset,
+                   p.val=TRUE,
+                   xlabel="Days",
+                   legend_position = "right",
+                   legend_rows = 4,
+                   average = "median",
+                   optimal=T,
+                   plot_cutpoint=F,
+                   additional = paste(mutation,"status")
+                   )
+```
+
+### Modify the output
+
+One can modify the output by putting the graph into a new variable and use it then as a `r BiocStyle::CRANpkg("ggplot2")` object, using `r BiocStyle::CRANpkg("ggpubr")`, see: [ggpubr reference](http://www.sthda.com/english/rpkgs/ggpubr/reference/ggpar.html)  
+
+For example:
+
+* `caption = "A user defined caption"`
+* Font of the caption: `font.caption  = c(10, "plain", "orange"),`
+* `legend.title = "override the title of the legend"`
+
+The legend can be put in two or more rows using the `legend_rows` parameter.
+
+**The risk table does not work with ggpar()**
+```{r, fig.width=6,fig.height=4}
+library(ggpubr)
+
+p <- Survival_adaptable(x = c("Age category"), Eset = mutset,
+                   p.val=FALSE,
+                   xlabel="Days",
+                   legend_position = "bottom",
+                   legend_rows = 3,
+                   average = "median",
+                   optimal=T,
+                   plot_cutpoint=F,
+                   additional = paste(mutation,"status"),
+                   risk_table = FALSE,
+                   plot_title = "A dummy Title"
+)
+
+p <- ggpar(
+  p,
+  caption       = "A user defined caption",
+  font.caption  = c(10, "plain", "orange"),    
+  font.title    = c(16, "bold", "darkblue"),         
+  font.subtitle = c(12, "bold.italic", "purple"), 
+  font.x        = c(14, "bold.italic", "red"),          
+  font.y        = c(10, "bold.italic", "darkred"),      
+  font.xtickslab = c(12, "plain", "darkgreen"),
+  font.legend   = c(8, "plain", "red"),
+  ggtheme       = theme(plot.margin=unit(c(1,1,2,1),"cm")),
+  legend.title = "override the title of the legend"
+)
+
+#library(scales)
+#p <- p + guides(colour = guide_legend(nrow = 2))
+p
+
+```
+
+
+
+# Plot the log hazard ration using **smoothCoxph_man**
+```{r}
+smoothCoxph_man(x = c("BAMBI", "CD44"), Eset=mutset,
+                #exclude_values=c("pathologic_stage", "Stage II", "Stage I", "Stage IV"),
+                logrisk=T, average="median")
+```
+
+**How the exclude works:**
+
+`c("column of clinical data to look for exclusion", "exclude group 1 from this column", "exclude group 2 from this column", ...)`
+
+# Calculate the Hazard Ratio for many genes from the dataset:
+```{r}
+hazard_list(x = c("FOXA2","FOXD1","TSPAN8","ICAM1"), 
+            Eset = Eset,
+            additional = "patient.neoplasm_histologic_grade",
+            exclude = c("gx"))
+```

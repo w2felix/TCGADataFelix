@@ -23,6 +23,6 @@ Title
 }
 \examples{
 \dontrun{
-Hazard_list(x = c("FOXA2"), Eset = Eset, additional = "pathologic_stage", exclude = c("Stage IV")
+hazard_list(x = c("FOXA2"), Eset = Eset, additional = "pathologic_stage", exclude = c("Stage IV")
 }
 }

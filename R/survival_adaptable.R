@@ -12,9 +12,12 @@
 #' @param ylabel User defined y-axis label
 #' @param logrisk logrisk?!
 #' @param legend_position where should the legend be? doesn't work with theme_bw
+#' @param legend_rows How many rows are used for the legend
 #' @param average for more than one gene, how the value of the averaged z-score is calculated, either median or mean
 #' @param optimal calculate the optimal cutpoint, will overide the value value when numeric, does not work when value = "q"
 #' @param plot_cutpoint Plot the graph how the optimal cutpoint was calculated, normal survival plot will be REPLACED by surv_cutpoint: Determine the optimal cutpoint for each variable using ’maxstat’
+#' @param risk_table If the risk table is shown or not, use FALSE or TRUE
+#' @param plot_title Title of the Plot, if not stated, no title will be shown
 #' @param ... additional variables that can be added
 #'
 #' @return A survival Estimator
@@ -26,7 +29,7 @@
 #' value = 0, additional = "pathologic_stage",
 #' exclude = c("Stage IV"), p.val=TRUE,
 #' xlabel="Days", legend_position = "top", average = "median",
-#' optimal=T, plot_cutpoint=F)
+#' optimal=T, plot_cutpoint=F,risk_table=TRUE)
 #' }
 Survival_adaptable <- function (x, Eset,
                                 value = 0,
@@ -37,9 +40,12 @@ Survival_adaptable <- function (x, Eset,
                                 ylabel,
                                 logrisk = TRUE,
                                 legend_position,
+                                legend_rows = 1,
                                 average = "mean",
                                 optimal = FALSE,
                                 plot_cutpoint=FALSE,
+                                risk_table = TRUE,
+                                plot_title = "",
                                 ...) {
 
 
@@ -318,10 +324,11 @@ Survival_adaptable <- function (x, Eset,
     p <- survminer::ggsurvplot(
       fit,                     # survfit object with calculated statistics.
       data=z,
+      title = plot_title,
       surv.scale = c("percent"),
       legend = legend_position,
       legend.labs = Nameing_vector,
-      legend.title = paste(gene_name, "Expression:"),
+      legend.title = gene_name,
       # xlim = c(0,2000),        # present narrower X axis, but not affect survival estimates.
       break.time.by = 500,     # break X axis in time intervals by 500.
 
@@ -331,7 +338,7 @@ Survival_adaptable <- function (x, Eset,
       conf.int = F,         # show confidence intervals for point estimaes of survival curves.
       xlab = xlabel,
       ylab = ylabel,
-      risk.table = TRUE,       # show risk table.
+      risk.table = risk_table,       # show risk table.
       risk.table.y.text.col = T, # colour risk table text annotations.
       risk.table.y.text = F, # show bars instead of names in text annotations in legend of risk table
 
@@ -343,6 +350,7 @@ Survival_adaptable <- function (x, Eset,
       # tables.theme = theme_cleantable(),
       # ggtheme = theme_bw() # Change ggplot2 theme
     )
+    p <- p + ggplot2::guides(colour = guide_legend(nrow = legend_rows))
     p
 
   } else {
@@ -431,8 +439,9 @@ Survival_adaptable <- function (x, Eset,
       data=z,
       surv.scale = c("percent"),
       legend = legend_position,
+      title = plot_title,
       legend.labs = Nameing_vector,
-      legend.title = paste(gene_name, "Expression:"),
+      legend.title = gene_name,
       # xlim = c(0,2000),        # present narrower X axis, but not affect survival estimates.
       break.time.by = 500,     # break X axis in time intervals by 500.
 
@@ -442,7 +451,7 @@ Survival_adaptable <- function (x, Eset,
       conf.int = F,         # show confidence intervals for point estimaes of survival curves.
       xlab = xlabel,
       ylab = ylabel,
-      risk.table = TRUE,       # show risk table.
+      risk.table = risk_table,       # show risk table.
       risk.table.y.text.col = T, # colour risk table text annotations.
       risk.table.y.text = F, # show bars instead of names in text annotations in legend of risk table
 
@@ -454,6 +463,7 @@ Survival_adaptable <- function (x, Eset,
       # tables.theme = theme_cleantable(),
       # ggtheme = theme_bw() # Change ggplot2 theme
     )
+    p <- p + ggplot2::guides(colour = guide_legend(nrow = legend_rows))
     p
   }
 

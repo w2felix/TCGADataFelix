@@ -37,9 +37,9 @@ fetch_TCGA_mutations <- function(path,
   # -> Data is collapsed to a single vector containing all mutations -> needs to be seperated again
 
   for(i in 1:length(filenames)){
-    pData(Eset)[rownames(pData(Eset))==patientnames[i],"mutation"] <- paste(unlist(patients[[i]][1]),collapse=" ")
-    pData(Eset)[rownames(pData(Eset))==patientnames[i],"mutation_classification"] <- paste(unlist(patients[[i]][9]),collapse=" ")
-    pData(Eset)[rownames(pData(Eset))==patientnames[i],"variant_type"] <- paste(unlist(patients[[i]][10]),collapse=" ")
+    Biobase::pData(Eset)[rownames(Biobase::pData(Eset))==patientnames[i],"mutation"] <- paste(unlist(patients[[i]][1]),collapse=" ")
+    Biobase::pData(Eset)[rownames(Biobase::pData(Eset))==patientnames[i],"mutation_classification"] <- paste(unlist(patients[[i]][9]),collapse=" ")
+    Biobase::pData(Eset)[rownames(Biobase::pData(Eset))==patientnames[i],"variant_type"] <- paste(unlist(patients[[i]][10]),collapse=" ")
   }
 
   Eset

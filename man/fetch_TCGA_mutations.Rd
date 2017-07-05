@@ -2,7 +2,8 @@
 % Please edit documentation in R/fetch_TCGA_mutations.R
 \name{fetch_TCGA_mutations}
 \alias{fetch_TCGA_mutations}
-\title{add a mutation column to the patient data}
+\title{Add an Mutation Column to an Expression set made by build_TCGA_Eset() from TCGA Mutation Data, downloaded from https://gdac.broadinstitute.org/
+Please download the Mutation_Packager_Oncotated_Calls}
 \usage{
 fetch_TCGA_mutations(path, Eset)
 }
@@ -15,10 +16,11 @@ fetch_TCGA_mutations(path, Eset)
 Returns the Expression Set with added mutation data
 }
 \description{
-add a mutation column to the patient data
+Add an Mutation Column to an Expression set made by build_TCGA_Eset() from TCGA Mutation Data, downloaded from https://gdac.broadinstitute.org/
+Please download the Mutation_Packager_Oncotated_Calls
 }
 \examples{
-fetch_TCGA_mutations(path = "../../../Projects/TCGA-Elisa/LAML.Mutation_Packager_Calls/", Eset = Eset)
+mutset <- fetch_TCGA_mutations(path = "../../../Projects/TCGA-Elisa/KIRC.Mutation_Packager_Oncotated_Calls/", Eset = Eset)
 
 
 
