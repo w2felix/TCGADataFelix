@@ -350,7 +350,7 @@ Survival_adaptable <- function (x, Eset,
       # tables.theme = theme_cleantable(),
       # ggtheme = theme_bw() # Change ggplot2 theme
     )
-    p <- p + ggplot2::guides(colour = guide_legend(nrow = legend_rows))
+    p <- p + ggplot2::guides(colour = ggplot2::guide_legend(nrow = legend_rows))
     p
 
   } else {
@@ -463,7 +463,7 @@ Survival_adaptable <- function (x, Eset,
       # tables.theme = theme_cleantable(),
       # ggtheme = theme_bw() # Change ggplot2 theme
     )
-    p <- p + ggplot2::guides(colour = guide_legend(nrow = legend_rows))
+    p <- p + ggplot2::guides(colour = ggplot2::guide_legend(nrow = legend_rows))
     p
   }
 
