@@ -50,7 +50,7 @@ Numeric: Devided into two groups
 A survival Estimator
 }
 \description{
-Create a Kaplan Meier Estimator by using a TCGA Dataset
+\code{survival_adaptable()} plots a highly modifyable survival estimator using the survminer package as a basis
 }
 \examples{
 \dontrun{

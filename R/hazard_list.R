@@ -1,4 +1,4 @@
-#' Title
+#' Returns a list of Hazard Ratios
 #'
 #' @param x a character vector with 1 or more gene names
 #' @param Eset An Expression Set

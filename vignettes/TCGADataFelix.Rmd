@@ -4,7 +4,7 @@ author: "Felix Geist"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteIndexEntry{"How to work with the TCGADataFelix package"}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -36,14 +36,13 @@ If you want to include mutational data, please download:
 
 Load the package
 
-```{r message=FALSE}
+```{r message=FALSE, warning = FALSE}
 library(TCGADataFelix)
 
-# for the expressionset functions:
-library(Biobase)
-
-# for the modification of the output
-library(ggplot2)
+  # for the expressionset functions:
+  library(Biobase)
+  # for the modification of the output
+  library(ggplot2)
 ```
 
 Define filepath for TCGA patient data downloaded from:
@@ -76,7 +75,7 @@ mutset <- fetch_TCGA_mutations(path = paste(filepath,mutation_data,sep=""), Eset
 
 
 ### Newly added columns to the clinical data by the *fetch_TCGA_mutations()* function
-Columns are added to: pData(Eset)
+Columns are added to: *pData(Eset)* 
 
 * mutation: a vector containing the names of the mutation
 * mutation_classification: a vector containing the mutation classifications

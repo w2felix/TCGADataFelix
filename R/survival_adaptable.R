@@ -1,5 +1,7 @@
 #' Create a Kaplan Meier Estimator by using a TCGA Dataset
 #'
+#' \code{survival_adaptable()} plots a highly modifyable survival estimator using the survminer package as a basis
+#'
 #' @param x a character vector with 1 or more gene names or a column of the clinical patient data
 #' @param Eset An Expression Set
 #' @param value Defines the value to subdivide the gene expression groups.

@@ -4,12 +4,16 @@
 \alias{build_TCGA_Eset}
 \title{Create an Expression Set from TCGA Data, downloaded from https://gdac.broadinstitute.org/}
 \usage{
-build_TCGA_Eset(clinical_file, expression_file)
+build_TCGA_Eset(clinical_file, expression_file, source, normalization = FALSE)
 }
 \arguments{
 \item{clinical_file}{PATH of the clinical data from TCGA, e.g.: "../../../Projects/TCGA-Elisa/Clinical/LAML.clin.merged.txt"}
 
 \item{expression_file}{PATH of the expression data from TCGA, e.g.: "../../../Projects/TCGA-Elisa/RNA/LAML.rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.data.txt"}
+
+\item{source}{Define the source of the data. "cBio" and "cBio_z_score" for cBioportal Data, "firehose" for Firehose data.}
+
+\item{normalization}{Whether the data should be normalized using limma's voom, scaled and z-scored.}
 }
 \value{
 ExpressionSet
@@ -19,8 +23,10 @@ Create an Expression Set from TCGA Data, downloaded from https://gdac.broadinsti
 }
 \examples{
 \dontrun{
-build_TCGA_Eset(clinical_file = "../../../Projects/TCGA-Elisa/Clinical/LAML.clin.merged.txt",
-expression_file = "../../../Projects/TCGA-Elisa/RNA/LAML.rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.data.txt")
+build_TCGA_Eset(clinical_file <- "../../../Projects/TCGA-Elisa/tcga_KIRC_cBio/data_bcr_clinical_data_patient.txt",
+expression_file <- "../../../Projects/TCGA-Elisa/tcga_KIRC_cBio/Kdata_RNA_Seq_v2_mRNA_median_Zscores.txt",
+source = "cBio_z_score",
+normalization = FALSE)
 }
 
 }

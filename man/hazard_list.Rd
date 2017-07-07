@@ -2,7 +2,7 @@
 % Please edit documentation in R/hazard_list.R
 \name{hazard_list}
 \alias{hazard_list}
-\title{Title}
+\title{Returns a list of Hazard Ratios}
 \usage{
 hazard_list(x, Eset, additional, exclude)
 }
@@ -19,7 +19,7 @@ hazard_list(x, Eset, additional, exclude)
 A List of Hazard Ratios of a list of genes
 }
 \description{
-Title
+Returns a list of Hazard Ratios
 }
 \examples{
 \dontrun{
