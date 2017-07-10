@@ -4,7 +4,7 @@
 \alias{build_TCGA_Eset}
 \title{Create an Expression Set from TCGA Data, downloaded from https://gdac.broadinstitute.org/}
 \usage{
-build_TCGA_Eset(clinical_file, expression_file, source, normalization = FALSE)
+build_TCGA_Eset(clinical_file, expression_file, source)
 }
 \arguments{
 \item{clinical_file}{PATH of the clinical data from TCGA, e.g.: "../../../Projects/TCGA-Elisa/Clinical/LAML.clin.merged.txt"}
@@ -12,8 +12,6 @@ build_TCGA_Eset(clinical_file, expression_file, source, normalization = FALSE)
 \item{expression_file}{PATH of the expression data from TCGA, e.g.: "../../../Projects/TCGA-Elisa/RNA/LAML.rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.data.txt"}
 
 \item{source}{Define the source of the data. "cBio" and "cBio_z_score" for cBioportal Data, "firehose" for Firehose data.}
-
-\item{normalization}{Whether the data should be normalized using limma's voom, scaled and z-scored.}
 }
 \value{
 ExpressionSet

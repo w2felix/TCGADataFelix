@@ -8,6 +8,7 @@
 #' Numeric: Devided into two groups
 #' "q": 25 \% quantile, 25-75 \% quantile and 75 \% quantile
 #' @param additional Additional covariate to subset groups
+#' @param mutation Vector of mutations, that were added using the add_mutation() function
 #' @param exclude Factors to exclude, when no gene is entered but another factor from the clinical patient data, it can also be excluded, the order of the to be exlcuded variables does not matter.
 #' @param p.val display the p-Value on the graph
 #' @param xlabel User defined x-axis label
@@ -36,6 +37,7 @@
 Survival_adaptable <- function (x, Eset,
                                 value = 0,
                                 additional,
+                                mutation,
                                 exclude,
                                 p.val = FALSE,
                                 xlabel,
@@ -54,6 +56,19 @@ Survival_adaptable <- function (x, Eset,
   if (missing(x)) {
     stop("You have to define a gene you want to calculate survival")
   }
+
+  if(!missing(mutation)){
+    if(missing(additional)){
+      if(length(mutation)>1){
+        additional <- paste(mutation,  collapse = " & ")
+      } else {
+        addtional <- mutation
+      }
+    } else {
+      stop("You cannot use mutations and additional covariates together at the moment")
+    }
+  }
+
 
   time <- Biobase::pData(Eset)$X_OS
   event <- Biobase::pData(Eset)$X_OS_IND

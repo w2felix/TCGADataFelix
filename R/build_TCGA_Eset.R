@@ -3,8 +3,6 @@
 #' @param clinical_file PATH of the clinical data from TCGA, e.g.: "../../../Projects/TCGA-Elisa/Clinical/LAML.clin.merged.txt"
 #' @param expression_file PATH of the expression data from TCGA, e.g.: "../../../Projects/TCGA-Elisa/RNA/LAML.rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.data.txt"
 #' @param source Define the source of the data. "cBio" and "cBio_z_score" for cBioportal Data, "firehose" for Firehose data.
-#' @param normalization Whether the data should be normalized using limma's voom, scaled and z-scored.
-#'
 #' @importFrom dplyr %>%
 #' @return ExpressionSet
 #' @export
@@ -19,8 +17,7 @@
 #'
 build_TCGA_Eset <- function (clinical_file,
                              expression_file,
-                             source,
-                             normalization=FALSE) {
+                             source) {
 #clinical_file <- "../../../Projects/TCGA-Elisa/tcga_KIRC_cBio/data_bcr_clinical_data_patient.txt"
 #expression_file <- "../../../Projects/TCGA-Elisa/tcga_KIRC_cBio/data_RNA_Seq_v2_mRNA_median_Zscores.txt"
 
@@ -81,16 +78,12 @@ if(source=="firehose") {
 
   ### normalize data:
 
-  if(normalization){
-    vm <- function(x){
-      x <- t(apply(x,1,as.numeric))
-      ex <- limma::voom(x,plot=F)
-      return(ex$E)
-    }
-    expression_removed_vm  <- vm(expression_tumor)
-  } else {
-    expression_removed_vm <- expression_removed
+  vm <- function(x){
+    x <- t(apply(x,1,as.numeric))
+    ex <- limma::voom(x,plot=F)
+    return(ex$E)
   }
+  expression_removed_vm  <- vm(expression_tumor)
 
 } else if(source=="cBio") {
 
@@ -123,16 +116,13 @@ if(source=="firehose") {
   expression_removed <- expressiondata[-remove_data,]
 
   ### end remove empty genes
-  if(normalization){
-    vm <- function(x){
-      x <- t(apply(x,1,as.numeric))
-      ex <- limma::voom(x,plot=F)
-      return(ex$E)
-    }
-    expression_removed_vm  <- vm(expression_removed)
-  } else {
-    expression_removed_vm <- expression_removed
+  vm <- function(x){
+    x <- t(apply(x,1,as.numeric))
+    ex <- limma::voom(x,plot=F)
+    return(ex$E)
   }
+  expression_removed_vm  <- vm(expression_removed)
+
 } else if(source=="cBio_z_score") {
 
   # Importing the clinical Data
@@ -178,10 +168,10 @@ if(source=="firehose") {
   # hist(as.matrix(expression_removed_vm),breaks = 10000,xlim = c(-5,5))
 
   # Z-Score the data -> scaling!
-if(normalization){
-  expression_removed_vm_zscore <- t(scale(t(expression_removed_vm), center = TRUE, scale = TRUE))
-} else {
+if(source=="cBio_z_score"){
   expression_removed_vm_zscore <- expression_removed_vm
+} else {
+  expression_removed_vm_zscore <- t(scale(t(expression_removed_vm), center = TRUE, scale = TRUE))
 }
 
 # hist(expression_removed_vm_zscore,xlim = c(-5,5))
@@ -189,7 +179,7 @@ if(normalization){
 
 ## rename columns:
 
-colnames(expression_removed_vm_zscore) <- gsub('\\.','-',substr(colnames(expression_tumor),1,12))
+colnames(expression_removed_vm_zscore) <- gsub('\\.','-',substr(colnames(expression_removed),1,12))
 
 # set the rownames keeping only gene name (otherwise the old rownames are still in the expression_removed_vm)
 # take care not to have duplicates:
@@ -269,6 +259,8 @@ if(source=="firehose"){
 
   clinical$X_DFS_IND <- ifelse(clinical$DFS_STATUS == 'DiseaseFree', 0, ifelse(clinical$DFS_STATUS == 'Recurred/Progressed', 1, NA))
   clinical$X_DFS <- as.numeric(clinical$DFS_MONTHS)*30.4167
+
+  clinical$age <- floor(-as.numeric(clinical$DAYS_TO_BIRTH)/365.2422)
 }
 
 ##### make expression set:

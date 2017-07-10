@@ -4,10 +4,10 @@
 \alias{Survival_adaptable}
 \title{Create a Kaplan Meier Estimator by using a TCGA Dataset}
 \usage{
-Survival_adaptable(x, Eset, value = 0, additional, exclude, p.val = FALSE,
-  xlabel, ylabel, logrisk = TRUE, legend_position, legend_rows = 1,
-  average = "mean", optimal = FALSE, plot_cutpoint = FALSE,
-  risk_table = TRUE, plot_title = "", ...)
+Survival_adaptable(x, Eset, value = 0, additional, mutation, exclude,
+  p.val = FALSE, xlabel, ylabel, logrisk = TRUE, legend_position,
+  legend_rows = 1, average = "mean", optimal = FALSE,
+  plot_cutpoint = FALSE, risk_table = TRUE, plot_title = "", ...)
 }
 \arguments{
 \item{x}{a character vector with 1 or more gene names or a column of the clinical patient data}
@@ -19,6 +19,8 @@ Numeric: Devided into two groups
 "q": 25 \% quantile, 25-75 \% quantile and 75 \% quantile}
 
 \item{additional}{Additional covariate to subset groups}
+
+\item{mutation}{Vector of mutations, that were added using the add_mutation() function}
 
 \item{exclude}{Factors to exclude, when no gene is entered but another factor from the clinical patient data, it can also be excluded, the order of the to be exlcuded variables does not matter.}
 

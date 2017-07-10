@@ -5,12 +5,12 @@
 \title{Add an Mutation Column to an Expression set made by build_TCGA_Eset() from TCGA Mutation Data, downloaded from https://gdac.broadinstitute.org/
 Please download the Mutation_Packager_Oncotated_Calls}
 \usage{
-fetch_TCGA_mutations(path, Eset)
+fetch_TCGA_mutations(path, source)
 }
 \arguments{
-\item{path}{Path to the mutation Files downloaded from Firehose TCGA}
+\item{path}{Path to the mutation Files downloaded from Firehose TCGA or path to the data_mutations_extended.txt file from cBioportal}
 
-\item{Eset}{Eset that will be used}
+\item{source}{Use "cBio"/"cBio_z_score" or "firehose" as a source}
 }
 \value{
 Returns the Expression Set with added mutation data
