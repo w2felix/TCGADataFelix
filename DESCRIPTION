@@ -1,6 +1,6 @@
 Package: TCGADataFelix
 Title: Analyzing the TCGA Data according to gene expression and survival
-Version: 2.0
+Version: 2.1
 Authors@R: person("Felix", "Geist", email = "f.geist@dkfz.de", role = c("aut", "cre"))
 Description: Yet another survival function for the TCGA Data. It makes quite decent looking graphs of survival and cox regression analysis.
 Depends: R (>= 3.4.0)

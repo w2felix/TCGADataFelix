@@ -7,10 +7,11 @@
 #' @return Returns the Expression Set with added mutation data
 #' @export
 #'
-#' @examples mutset <- fetch_TCGA_mutations(path = "../../../Projects/TCGA-Elisa/KIRC.Mutation_Packager_Oncotated_Calls/", Eset = Eset)
-#'
-#'
-#'
+#' @examples
+#' \dontrun{
+#' mutset <- fetch_TCGA_mutations(path = "~/R/Projects/TCGA-Elisa/KIRC.Mutation_Packager_Oncotated_Calls/", Eset = Eset)
+#' }
+
 fetch_TCGA_mutations <- function(path,
                                  source) {
   if(source=="firehose"){

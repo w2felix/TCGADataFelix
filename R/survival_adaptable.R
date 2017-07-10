@@ -62,7 +62,7 @@ Survival_adaptable <- function (x, Eset,
       if(length(mutation)>1){
         additional <- paste(mutation,  collapse = " & ")
       } else {
-        addtional <- mutation
+        additional <- mutation
       }
     } else {
       stop("You cannot use mutations and additional covariates together at the moment")

@@ -79,7 +79,7 @@ library(TCGADataFelix)
 Define filepath for TCGA patient data downloaded from:
 
 ```{r}
-filepath <- "../../../../Projects/TCGA-Elisa/tcga_KIRC_cBio/"
+filepath <- "~/R/Projects/TCGA-Elisa/tcga_KIRC_cBio/"
 
 # The filename of the clinical data
 clinical_data <- "data_bcr_clinical_data_patient.txt"  
@@ -295,8 +295,6 @@ p <- ggpar(
   legend.title = "override the title of the legend"
 )
 
-#library(scales)
-#p <- p + guides(colour = guide_legend(nrow = 2))
 p
 
 ```
@@ -304,7 +302,7 @@ p
 
 
 # Plot the log hazard ration using **smoothCoxph_man**
-```{r}
+```{r, fig.width=6,fig.height=4}
 smoothCoxph_man(x = c("BAMBI", "CD44"), Eset=mutset,
                 #exclude_values=c("pathologic_stage", "Stage II", "Stage I", "Stage IV"),
                 logrisk=T, average="median")

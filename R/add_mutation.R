@@ -20,11 +20,12 @@ add_mutation <- function (Eset,
     mutation_patients <- data.frame(unique(substr(mutationdata[mutationdata[,1]==mutations[i],16],1,12)),stringsAsFactors=FALSE)
     colnames(mutation_patients) <- "PATIENT_ID"
     mutation_patients[,mutations[i]] <- "mutated"
-    Biobase::pData(Eset) <- dplyr::left_join(pData(Eset),mutation_patients,by = c("PATIENT_ID" = "PATIENT_ID"))
+    Biobase::pData(Eset) <- dplyr::left_join(Biobase::pData(Eset),mutation_patients,by = c("PATIENT_ID" = "PATIENT_ID"))
+    Biobase::pData(Eset)[,mutations[i]] <- ifelse(!is.na(Biobase::pData(Eset)[,mutations[i]]), "mutated", "not mutated")
   }
 
   if(length(mutations)>1){
-    multiple <- !is.na(Biobase::pData(Eset)[,mutations])
+    multiple <- Biobase::pData(Eset)[,mutations]=="mutated"
     Biobase::pData(Eset)[,paste(mutations,  collapse = " & ")] <- ifelse(apply(multiple, 1, sum, na.rm=TRUE)==length(mutations),"all mutated","not all mutated")
   }
 

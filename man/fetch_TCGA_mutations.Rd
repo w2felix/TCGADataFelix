@@ -20,8 +20,7 @@ Add an Mutation Column to an Expression set made by build_TCGA_Eset() from TCGA 
 Please download the Mutation_Packager_Oncotated_Calls
 }
 \examples{
-mutset <- fetch_TCGA_mutations(path = "../../../Projects/TCGA-Elisa/KIRC.Mutation_Packager_Oncotated_Calls/", Eset = Eset)
-
-
-
+\dontrun{
+mutset <- fetch_TCGA_mutations(path = "~/R/Projects/TCGA-Elisa/KIRC.Mutation_Packager_Oncotated_Calls/", Eset = Eset)
+}
 }
