@@ -15,10 +15,23 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## General Purpose
 
-The package was written to simplify the analysis of the TCGA / GDAC Datasets, as most of the availible packages don't work so far. The analysis is based on the explanation of TriS on Biostars.org: https://www.biostars.org/p/153013/
+The package was written to simplify the analysis of the TCGA / GDAC Datasets, as most of the availible packages don't work so far. The analysis is generally based on the explanation of TriS on Biostars.org: https://www.biostars.org/p/153013/
 
 So what kind of Data needs to be downloaded?
-Using the GDAC firebrowse (http://gdac.broadinstitute.org/), one can get access to the curated level 3 data of the TCGA / GDAC consortium and download it.
+
+Using the GDAC firehose and cBioportal one can get access to the curated level 3 data of the TCGA / GDAC consortium and download it, nevertheless, the data from www.cBioportal.org has apperently the more recent data for mutations, and that's why you can have to define in the parameters, which kind of data you are using.
+
+`source = "cBio"` for cBioportal Data, that was not zscored (will be done by the script with internally but not against normal samples as it is done by cBioportal) (http://www.cbioportal.org/data_sets.jsp), 
+
+`source = "cBio_z_score"` for the data that was zscored by cBioportal
+
+and `source = "firehose"` for the firehose data (http://gdac.broadinstitute.org/).
+
+* Using Firehose: access the RNASeq Level 3 RSEM genes normalized expression Data 
+* Using cBioportal: z-Score normalized gene expression data (mRNA z-Scores (RNA Seq V2 RSEM) compared to the expression distribution of each gene tumors that are diploid for this gene)
+* Using cBioportal: Expression levels for 20532 genes in 606 ccrcc cases (RNA Seq V2 RSEM)
+
+## Using Data from Firehose
 
 For the clinical data please download:
 
@@ -32,7 +45,25 @@ If you want to include mutational data, please download:
 
 `Mutation Packager Oncotated Calls`
 
+## Using Data from cBioportal
+
+For the clinical data please use:
+
+`data_bcr_clinical_data_patient.txt`
+
+For the expression data please use either:
+
+* `data_RNA_Seq_v2_mRNA_median_Zscores.txt`
+* or `data_RNA_Seq_v2_expression_median.txt`
+
+If you want to include mutational data, please use:
+
+* Firehose: Have a folder with the patient mutation files and link to that `mutations\`
+* cBioportal: `data_mutations_extended.txt`
+
 # How to use the package:
+
+I will show the example for the cBioportal Data, but working with the data from Firehose is quite similar (I will explain the differences when needed)
 
 Load the package
 
@@ -47,72 +78,93 @@ library(TCGADataFelix)
 
 Define filepath for TCGA patient data downloaded from:
 
-Have **one folder each** for clinical data, one for expression data and one for the mutational data.
-
 ```{r}
-filepath <- "../../../../Projects/TCGA-Elisa/"
+filepath <- "../../../../Projects/TCGA-Elisa/tcga_KIRC_cBio/"
 
 # The filename of the clinical data
-clinical_data <- "Clinical_KIRC/KIRC.clin.merged.txt"  
+clinical_data <- "data_bcr_clinical_data_patient.txt"  
 
 # The filename of the expression data
-expression_data <- "RNA_KIRC/KIRC.rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.data.txt"
+expression_data <- "data_RNA_Seq_v2_mRNA_median_Zscores.txt"
+```
 
+For the mutation Data, cBioportal and Firehose Data differs, as Firehose gives one file for each patient in a folder and cBioportal one file with all mutations and patients in.
+
+### Importing Firehose mutational data:
+
+```{r}
 # The Folder of the mutation data (each patient has one file)
 mutation_data <- "KIRC.Mutation_Packager_Oncotated_Calls/"
 ```
 
-## Load the expression Data using **build_TCGA_Eset()**:
-```{r warning=FALSE, message=FALSE}
-Eset <- build_TCGA_Eset(clinical_file = paste(filepath,clinical_data, sep = ""),
-                        expression_file = paste(filepath,expression_data, sep = ""))
+### Importing cBioportal mutational data:
+
+```{r}
+# The File of the mutation data
+mutation_data <- "data_mutations_extended.txt"
 ```
 
-## Add the mutation data using **fetch_TCGA_mutations()**
+## Load the expression Data using **build_TCGA_Eset()**:
+
+values for source:
+* `firehose` for Firehose data
+* `cBio` for not zScored cBioportal data
+* `cBio_z_score` for zScored cBioportal data
+
+```{r warning=FALSE, message=FALSE}
+source <- "cBio_z_score"
+Eset <- build_TCGA_Eset(clinical_file = paste(filepath,clinical_data, sep = ""),
+                        expression_file = paste(filepath,expression_data, sep = ""),
+                        source = source
+                        )
+```
+
+## Load the mutation data using **fetch_TCGA_mutations()**
 ```{r}
-mutset <- fetch_TCGA_mutations(path = paste(filepath,mutation_data,sep=""), Eset = Eset)
+fetch_TCGA_mutations(path = paste(filepath,mutation_data,sep=""),
+                     source = source)
 ```     
 
+The Mutations are now loaded into a new variable: mutationdata
 
-### Newly added columns to the clinical data by the *fetch_TCGA_mutations()* function
+* Every mutation from one patient is one row.
+* **Some mutations are duplicated!**, so take care to remove duplicates by using unique(). `add_mutations()` takes care of that.
+
+
+### Newly added columns to the clinical data by the *add_mutations()* function
 Columns are added to: *pData(Eset)* 
 
-* mutation: a vector containing the names of the mutation
-* mutation_classification: a vector containing the mutation classifications
-* variant_type: a vector containing the variant types
+To get an overview over the type and number of mutations in the dataset. **Attention:** Some patients and mutations are duplicated.
+```{r}
+head(sort(table(mutationdata$Hugo_Symbol), decreasing=T), n= 30L)
+```
+
+Define now the mutations, you want to analyze:
+```{r}
+mutations <- c("VHL","PBRM1")
+mutset <- add_mutation(Eset,mutations)
+```   
 
 # Use and analyze the data
 
-To get an overview over the type and number of mutations in the dataset
-```{r}
-head(sort(table(unlist(strsplit(pData(mutset)$mutation, " ")),useNA="no"), decreasing=T), n= 30L)
-```
-
-Define now, what you want to analyze:
+Define now, what you want to analyze as a factor for the survival data:
 ```{r}
 gene <- "FOXD1"
-mutation <- "PBRM1"
-```
-
-Add a factorized column of mutations needed for the survival analysis to the clinical data.
-Silent mutations are not included in the analysis:
-```{r}
-pData(mutset)[,paste(mutation,"status")] <- ifelse(grepl(mutation,pData(mutset)$mutation) & pData(mutset)$mutation != "Silent","mutated","wt")
-
 ```
 
 ## Do a survival analysis using **Survival_adaptable()** 
-```{r, fig.width=8,fig.height=6}
+```{r, fig.width=8,fig.height=9}
 Survival_adaptable(x = c(gene), 
                    Eset = mutset,
-                   additional = paste(mutation,"status"),
+                   mutation = mutations,
                    p.val=F,
                    xlabel="Days",
-                   legend_position = "top",
+                   legend_position = "bottom",
+                   legend_rows = 4,
                    average = "median",
                    optimal=F,
                    plot_cutpoint=F,
-                   plot_title = paste("Kaplan Meier Estimator of", gene, "Expression and", mutation, "\nstatus in ccRCC (KIRC, TCGA)")
+                   plot_title = paste("Kaplan Meier Estimator of", gene, "Expression and", paste(mutations, collapse = " & "), "\nstatus in ccRCC (KIRC, TCGA)")
                    )
 ```
 
@@ -129,51 +181,55 @@ additional  | a factor from the clinical dataset, e.g.: `"patient.neoplasm_histo
 additional  | multiple factors from the clinical dataset, e.g. `c("grade","age")`
 additional  | factorized mutations using: `paste(mutation,"status")`
 
+**The use of mutations and additional is not supported so far**
+
 ### Examples for *exclude*
 
 You can exclude single factors from either *x* or *additional* by using the parameter `exclude = "exclude1"` or multiple factors using `exclude = c("exlude1","exclude2")`
 
 e.g.: 
 
-> additional = "patient.neoplasm_histologic_grade"  
-exclude = c("g1","gx")
+> additional = "GRADE"  
+exclude = c("G1","GX")
 
 This would exclude the histologic grades g1 and gx from additional
 
-> x = c("patient.neoplasm_histologic_grade")  
+> x = c("GRADE")  
 additional = "age"  
-exclude = c("g1","gx", "old")
+exclude = c("G1","GX", "old")
 
-This would exclude histological grades g1 and gx from x and old from the additional age factor.  
+This would exclude histological grades G1 and GX from x and old from the additional age factor.  
 **x has to have at least two factors remaining for survival analysis**
 
 Example 1:
-```{r, fig.width=8,fig.height=6}
-Survival_adaptable(x = c("patient.neoplasm_histologic_grade"), Eset = mutset,
+```{r, fig.width=8,fig.height=9}
+Survival_adaptable(x = c("GRADE"), Eset = mutset,
                    p.val=F,
                    xlabel="Days",
                    legend_position = "right",
+                   legend_rows = 4,
                    average = "median",
                    optimal=T,
                    plot_cutpoint=F,
-                   additional = "patient.gender",
-                   exclude=c("gx","g1","male"),
+                   additional = "GENDER",
+                   exclude=c("[Not Available]","GX","G1","MALE"),
                   plot_title = paste("Kaplan Meier Estimator of histologic grade and patient gender \nin ccRCC (KIRC, TCGA)")
 )
 ```
 
 Example 2:
 ```{r, fig.width=8,fig.height=6}
-Survival_adaptable(x = c("patient.gender"), Eset = mutset,
+Survival_adaptable(x = c("GRADE"), Eset = mutset,
                    p.val=F,
                    xlabel="Days",
                    legend_position = "right",
+                   legend_rows = 4,
                    average = "median",
                    optimal=T,
                    plot_cutpoint=F,
-                   additional = paste(mutation,"status"),
-                   exclude=c("gx","g1"),
-                   plot_title = paste("Kaplan Meier Estimator of patient gender and", mutation, "\nstatus in ccRCC (KIRC, TCGA)")
+                   mutation = mutations,
+                   exclude=c("G1","GX","G2", "[Not Available]"),
+                   plot_title = paste("Kaplan Meier Estimator of all high grade tumors with ", paste(mutations, collapse = " & "), "\nstatus in ccRCC (KIRC, TCGA)")
                    )
 ```
 
@@ -192,7 +248,7 @@ Survival_adaptable(x = c("Age category"), Eset = mutset,
                    average = "median",
                    optimal=T,
                    plot_cutpoint=F,
-                   additional = paste(mutation,"status")
+                   mutation = mutations
                    )
 ```
 
@@ -220,7 +276,7 @@ p <- Survival_adaptable(x = c("Age category"), Eset = mutset,
                    average = "median",
                    optimal=T,
                    plot_cutpoint=F,
-                   additional = paste(mutation,"status"),
+                   mutation = mutations,
                    risk_table = FALSE,
                    plot_title = "A dummy Title"
 )
@@ -262,6 +318,6 @@ smoothCoxph_man(x = c("BAMBI", "CD44"), Eset=mutset,
 ```{r}
 hazard_list(x = c("FOXA2","FOXD1","TSPAN8","ICAM1"), 
             Eset = Eset,
-            additional = "patient.neoplasm_histologic_grade",
-            exclude = c("gx"))
+            additional = "GRADE",
+            exclude = c("GX"))
 ```
