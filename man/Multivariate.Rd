@@ -4,7 +4,7 @@
 \alias{Multivariate}
 \title{TCGA Multivariate Analysis}
 \usage{
-Multivariate(x, Eset, value = 0, factor, factor_list = F, mutation, exclude,
+Multivariate(x, Eset, value = 0, factor, factor_list = F, mutation,
   average = "mean", optimal = FALSE, survival = "overall",
   return_df = FALSE, plot_cutpoint = F, coef = F, ...)
 }
@@ -22,8 +22,6 @@ Numeric: Devided into two groups
 \item{factor_list}{Returns the levels of factors in the analysis}
 
 \item{mutation}{Vector of mutations, that were added using the add_mutation() function}
-
-\item{exclude}{Factors to exclude, when no gene is entered but another factor from the clinical patient data, it can also be excluded, the order of the to be exlcuded variables does not matter.}
 
 \item{average}{for more than one gene, how the value of the averaged z-score is calculated, either median or mean}
 

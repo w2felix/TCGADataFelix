@@ -8,7 +8,6 @@
 #' @param factor Additional covariate for the multivariate analysis
 #' @param factor_list Returns the levels of factors in the analysis
 #' @param mutation Vector of mutations, that were added using the add_mutation() function
-#' @param exclude Factors to exclude, when no gene is entered but another factor from the clinical patient data, it can also be excluded, the order of the to be exlcuded variables does not matter.
 #' @param average for more than one gene, how the value of the averaged z-score is calculated, either median or mean
 #' @param optimal calculate the optimal cutpoint, will overide the value value when numeric, does not work when value = "q"
 #' @param survival For overall survival = "overall", for disease free survival: survival = "DFS"
@@ -34,7 +33,6 @@ Multivariate <- function (x, Eset,
                           factor,
                           factor_list=F,
                           mutation,
-                          exclude,
                           average = "mean",
                           optimal = FALSE,
                           survival="overall",
