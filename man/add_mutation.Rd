@@ -4,12 +4,14 @@
 \alias{add_mutation}
 \title{Title}
 \usage{
-add_mutation(Eset, mutations)
+add_mutation(Eset, mutations, multiple = "all")
 }
 \arguments{
 \item{Eset}{Expression Set where the mutations will be added as a column in the pData table}
 
 \item{mutations}{a vector of mutations to be added}
+
+\item{multiple}{If more than one mutation was entered, a additional combined column will be added. multiple = "all" -> all mutations present in the patient, multiple = "one" -> mutation in at least one patient}
 }
 \value{
 Expression Set where the mutations will are added as a column in the pData table

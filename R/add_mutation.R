@@ -2,6 +2,7 @@
 #'
 #' @param Eset Expression Set where the mutations will be added as a column in the pData table
 #' @param mutations a vector of mutations to be added
+#' @param multiple If more than one mutation was entered, a additional combined column will be added. multiple = "all" -> all mutations present in the patient, multiple = "one" -> mutation in at least one patient
 #'
 #' @return Expression Set where the mutations will are added as a column in the pData table
 #' @export
@@ -13,7 +14,8 @@
 #' )
 #' }
 add_mutation <- function (Eset,
-                          mutations
+                          mutations,
+                          multiple="all"
                           ) {
 
   for(i in 1:length(mutations)){
@@ -25,8 +27,13 @@ add_mutation <- function (Eset,
   }
 
   if(length(mutations)>1){
-    multiple <- Biobase::pData(Eset)[,mutations]=="mutated"
-    Biobase::pData(Eset)[,paste(mutations,  collapse = " & ")] <- ifelse(apply(multiple, 1, sum, na.rm=TRUE)==length(mutations),"all mutated","not all mutated")
+    multiple_mut <- Biobase::pData(Eset)[,mutations]=="mutated"
+    if(multiple=="all"){
+      Biobase::pData(Eset)[,paste(mutations,  collapse = " & ")] <- ifelse(apply(multiple_mut, 1, sum, na.rm=TRUE)==length(mutations),"all mutated","not all mutated")
+    } else if(multiple=="one") {
+      Biobase::pData(Eset)[,paste(mutations,  collapse = " & ")] <- ifelse(apply(multiple_mut, 1, sum, na.rm=TRUE)>0,"mutated","not mutated")
+    }
+
   }
 
   Eset

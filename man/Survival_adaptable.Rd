@@ -7,7 +7,8 @@
 Survival_adaptable(x, Eset, value = 0, additional, mutation, exclude,
   p.val = FALSE, xlabel, ylabel, logrisk = TRUE, legend_position,
   legend_rows = 1, average = "mean", optimal = FALSE,
-  plot_cutpoint = FALSE, risk_table = TRUE, plot_title = "", ...)
+  plot_cutpoint = FALSE, risk_table = TRUE, plot_title = "",
+  survival = "overall", ...)
 }
 \arguments{
 \item{x}{a character vector with 1 or more gene names or a column of the clinical patient data}
@@ -45,6 +46,8 @@ Numeric: Devided into two groups
 \item{risk_table}{If the risk table is shown or not, use FALSE or TRUE}
 
 \item{plot_title}{Title of the Plot, if not stated, no title will be shown}
+
+\item{survival}{For overall survival = "overall", for disease free survival: survival = "DFS"}
 
 \item{...}{additional variables that can be added}
 }

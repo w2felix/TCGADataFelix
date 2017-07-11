@@ -17,7 +17,8 @@
 #'
 build_TCGA_Eset <- function (clinical_file,
                              expression_file,
-                             source) {
+                             source,
+                             skip=FALSE) {
 #clinical_file <- "../../../Projects/TCGA-Elisa/tcga_KIRC_cBio/data_bcr_clinical_data_patient.txt"
 #expression_file <- "../../../Projects/TCGA-Elisa/tcga_KIRC_cBio/data_RNA_Seq_v2_mRNA_median_Zscores.txt"
 
@@ -89,7 +90,7 @@ if(source=="firehose") {
 
   # Importing the clinical Data
   clinical <- as.data.frame(readr::read_delim(clinical_file,
-                                                "\t", escape_double = FALSE, trim_ws = TRUE,skip = 4))
+                                                "\t", escape_double = FALSE, trim_ws = TRUE,skip = skip))
 
   #clinical %>% dplyr::mutate_if(is.factor, as.character) -> clinical1
   rownames(clinical) <- clinical$PATIENT_ID
@@ -127,7 +128,7 @@ if(source=="firehose") {
 
   # Importing the clinical Data
   clinical <- as.data.frame(readr::read_delim(clinical_file,
-                                              "\t", escape_double = FALSE, trim_ws = TRUE,skip = 4))
+                                              "\t", escape_double = FALSE, trim_ws = TRUE,skip = skip))
 
   #clinical %>% dplyr::mutate_if(is.factor, as.character) -> clinical1
   rownames(clinical) <- clinical$PATIENT_ID
@@ -260,7 +261,10 @@ if(source=="firehose"){
   clinical$X_DFS_IND <- ifelse(clinical$DFS_STATUS == 'DiseaseFree', 0, ifelse(clinical$DFS_STATUS == 'Recurred/Progressed', 1, NA))
   clinical$X_DFS <- as.numeric(clinical$DFS_MONTHS)*30.4167
 
-  clinical$age <- floor(-as.numeric(clinical$DAYS_TO_BIRTH)/365.2422)
+  if(!"AGE" %in% colnames(clinical)) {
+    clinical$AGE <- floor(-as.numeric(clinical$DAYS_TO_BIRTH)/365.2422)
+  }
+
 }
 
 ##### make expression set:

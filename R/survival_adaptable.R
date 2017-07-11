@@ -21,6 +21,7 @@
 #' @param plot_cutpoint Plot the graph how the optimal cutpoint was calculated, normal survival plot will be REPLACED by surv_cutpoint: Determine the optimal cutpoint for each variable using ’maxstat’
 #' @param risk_table If the risk table is shown or not, use FALSE or TRUE
 #' @param plot_title Title of the Plot, if not stated, no title will be shown
+#' @param survival For overall survival = "overall", for disease free survival: survival = "DFS"
 #' @param ... additional variables that can be added
 #'
 #' @return A survival Estimator
@@ -50,6 +51,7 @@ Survival_adaptable <- function (x, Eset,
                                 plot_cutpoint=FALSE,
                                 risk_table = TRUE,
                                 plot_title = "",
+                                survival="overall",
                                 ...) {
 
 
@@ -69,9 +71,17 @@ Survival_adaptable <- function (x, Eset,
     }
   }
 
+  if(survival=="overall") {
+    time <- Biobase::pData(Eset)$X_OS
+    event <- Biobase::pData(Eset)$X_OS_IND
+  } else if(survival=="DFS"){
+    time <- Biobase::pData(Eset)$DFS_MONTH
+    event <- Biobase::pData(Eset)$DFS_STATUS
+    event <- ifelse(event=="Recurred/Progressed",1,0)
+  } else {
+    stop(paste("You cannot use \"", survival, "\" as censoring"), sep="")
+  }
 
-  time <- Biobase::pData(Eset)$X_OS
-  event <- Biobase::pData(Eset)$X_OS_IND
 
   if(x %in% colnames(Biobase::pData(Eset))){
     gene <- ""
@@ -140,6 +150,9 @@ Survival_adaptable <- function (x, Eset,
       z <- z[!z$additional==exclude, ]
       if(gene==""){
         z <- z[!z[,x]==exclude, ]
+      }
+      if(length(rownames(z))==0){
+        stop("All data was excluded, no further analysis possible.")
       }
     }
   }

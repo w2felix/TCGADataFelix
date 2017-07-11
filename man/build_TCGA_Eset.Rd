@@ -4,7 +4,7 @@
 \alias{build_TCGA_Eset}
 \title{Create an Expression Set from TCGA Data, downloaded from https://gdac.broadinstitute.org/}
 \usage{
-build_TCGA_Eset(clinical_file, expression_file, source)
+build_TCGA_Eset(clinical_file, expression_file, source, skip = FALSE)
 }
 \arguments{
 \item{clinical_file}{PATH of the clinical data from TCGA, e.g.: "../../../Projects/TCGA-Elisa/Clinical/LAML.clin.merged.txt"}

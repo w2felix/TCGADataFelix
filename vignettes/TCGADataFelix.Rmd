@@ -111,18 +111,24 @@ values for source:
 * `cBio` for not zScored cBioportal data
 * `cBio_z_score` for zScored cBioportal data
 
+values for skip:
+
+So far you need to test which `skip` is the right one for the clinical data. Check in the clinical data file at which row the header for the clinical data is and use this row number minus 1 as the value for `skip`.
+
 ```{r warning=FALSE, message=FALSE}
 source <- "cBio_z_score"
 Eset <- build_TCGA_Eset(clinical_file = paste(filepath,clinical_data, sep = ""),
                         expression_file = paste(filepath,expression_data, sep = ""),
-                        source = source
+                        source = source,
+                        skip = 4
                         )
 ```
 
 ## Load the mutation data using **fetch_TCGA_mutations()**
 ```{r}
 fetch_TCGA_mutations(path = paste(filepath,mutation_data,sep=""),
-                     source = source)
+                     source = source
+                     )
 ```     
 
 The Mutations are now loaded into a new variable: mutationdata
@@ -139,10 +145,18 @@ To get an overview over the type and number of mutations in the dataset. **Atten
 head(sort(table(mutationdata$Hugo_Symbol), decreasing=T), n= 30L)
 ```
 
-Define now the mutations, you want to analyze:
+Define now the mutations, you want to analyze and load them into the ExpressionSet using `add_mutation()`
+
+If more than one mutation was entered, a additional combined mutation column will be added
+
+* `multiple = "all"` -> a patient that has all mutations present
+* `multiple = "one"` -> mutation is in at least one patient
+
 ```{r}
 mutations <- c("VHL","PBRM1")
-mutset <- add_mutation(Eset,mutations)
+mutset <- add_mutation(Eset,
+                       mutations,
+                       multiple="all")
 ```   
 
 # Use and analyze the data
@@ -235,7 +249,7 @@ Survival_adaptable(x = c("GRADE"), Eset = mutset,
 
 ##Add additional categories, e.g. age:
 ```{r}
-pData(mutset)[,"Age category"] <- ifelse(pData(mutset)$age > 65,"old","young")
+pData(mutset)[,"Age category"] <- ifelse(pData(mutset)$AGE > 65,"old","young")
 ```
 
 Example:
