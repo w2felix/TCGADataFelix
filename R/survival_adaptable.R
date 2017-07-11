@@ -22,6 +22,7 @@
 #' @param risk_table If the risk table is shown or not, use FALSE or TRUE
 #' @param plot_title Title of the Plot, if not stated, no title will be shown
 #' @param survival For overall survival = "overall", for disease free survival: survival = "DFS"
+#' @param return_df Returns the Dataframe that is used for calculatinf the Cox Regression
 #' @param ... additional variables that can be added
 #'
 #' @return A survival Estimator
@@ -52,6 +53,7 @@ Survival_adaptable <- function (x, Eset,
                                 risk_table = TRUE,
                                 plot_title = "",
                                 survival="overall",
+                                return_df=FALSE,
                                 ...) {
 
 
@@ -102,7 +104,9 @@ Survival_adaptable <- function (x, Eset,
   z <- data.frame(time = time, event = event)
   if(gene!=""){
     if(length(gene)>1){
-
+      if(!gene %in% rownames(Biobase::exprs(Eset))){
+        stop(paste(paste(gene[!gene %in% rownames(Biobase::exprs(Eset))], collapse=" & "), "not in gene or patient list"))
+      }
       z <- data.frame(time = time, event = event)
       z[,gene] <- t(Biobase::exprs(Eset)[gene,])
       rownames(z) <- colnames(Biobase::exprs(Eset)[gene,])
@@ -132,7 +136,7 @@ Survival_adaptable <- function (x, Eset,
   }
 
   # Get rid of empty rows
-  z <- z[!is.na(z$event) & !is.na(z$time) & !is.na(z$additional) & !z$additional=="",  ]
+  z <- z[!is.na(z$event) & !is.na(z$time) & !is.na(z$additional) & !z$additional=="" & !z$additional=="[Not Available]",  ]
   if(gene==""){
     z <- z[!is.na(z[,x]),]
   }
@@ -350,7 +354,9 @@ Survival_adaptable <- function (x, Eset,
                                conf.type="log")
       z <- z2
     }
-
+    if(return_df){
+      return(z)
+    }
     p <- survminer::ggsurvplot(
       fit,                     # survfit object with calculated statistics.
       data=z,
@@ -463,7 +469,9 @@ Survival_adaptable <- function (x, Eset,
                                conf.type="log")
       z <- z2
     }
-
+    if(return_df){
+      return(z)
+    }
     p <- survminer::ggsurvplot(
       fit,                     # survfit object with calculated statistics.
       data=z,

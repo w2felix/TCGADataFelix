@@ -95,13 +95,24 @@ if(source=="firehose") {
   #clinical %>% dplyr::mutate_if(is.factor, as.character) -> clinical1
   rownames(clinical) <- clinical$PATIENT_ID
 
-
+  #View(clinical)
 
   ### Import Expression Data
   expressiondata <- as.data.frame(readr::read_delim(expression_file,
                                                     "\t", escape_double = FALSE, trim_ws = TRUE))
- #View(expressiondata)
-  rownames(expressiondata) <- expressiondata$Hugo_Symbol
+  #View(expressiondata)
+
+  # remove duplicated row names:
+  # table(!duplicated(expressiondata$Hugo_Symbol))
+
+  new_rownames <- ifelse(!duplicated(expressiondata$Hugo_Symbol),expressiondata$Hugo_Symbol,paste(expressiondata$Hugo_Symbol,expressiondata$Entrez_Gene_Id,sep="|"))
+
+  if(is.na(new_rownames[1])){
+    new_rownames[1] <- paste(expressiondata$Hugo_Symbol[1],expressiondata$Entrez_Gene_Id[1],sep="|")
+  }
+
+  rownames(expressiondata) <- new_rownames
+
   expressiondata <- expressiondata[,-c(1:2)]
   colnames(expressiondata) <- substr(colnames(expressiondata),1,12)
 
@@ -115,7 +126,7 @@ if(source=="firehose") {
   }
   remove_data <- rem(expressiondata)
   expression_removed <- expressiondata[-remove_data,]
-
+  # View(expression_removed)
   ### end remove empty genes
   vm <- function(x){
     x <- t(apply(x,1,as.numeric))
@@ -139,7 +150,17 @@ if(source=="firehose") {
   expressiondata <- as.data.frame(readr::read_delim(expression_file,
                                                     "\t", escape_double = FALSE, trim_ws = TRUE))
   #View(expressiondata)
-  rownames(expressiondata) <- expressiondata$Hugo_Symbol
+  # remove duplicated row names:
+  # table(!duplicated(expressiondata$Hugo_Symbol))
+
+  new_rownames <- ifelse(!duplicated(expressiondata$Hugo_Symbol),expressiondata$Hugo_Symbol,paste(expressiondata$Hugo_Symbol,expressiondata$Entrez_Gene_Id,sep="|"))
+
+  if(is.na(new_rownames[1])){
+    new_rownames[1] <- paste(expressiondata$Hugo_Symbol[1],expressiondata$Entrez_Gene_Id[1],sep="|")
+  }
+
+  rownames(expressiondata) <- new_rownames
+
   expressiondata <- expressiondata[,-c(1:2)]
   colnames(expressiondata) <- substr(colnames(expressiondata),1,12)
 
@@ -154,7 +175,7 @@ if(source=="firehose") {
 
   remove_data <- rem(expressiondata)
   expression_removed <- expressiondata[!remove_data,]
-
+  #View(expression_removed)
   ### end remove empty genes
   # as the data in the other options maybe voom normalized:
 
@@ -256,7 +277,7 @@ if(source=="firehose"){
 
 } else {
   clinical$X_OS_IND <- ifelse(clinical$OS_STATUS == 'LIVING', 0,1)
-  clinical$X_OS <- clinical$OS_MONTHS*30.4167
+  clinical$X_OS <- as.numeric(clinical$OS_MONTHS)*30.4167
 
   clinical$X_DFS_IND <- ifelse(clinical$DFS_STATUS == 'DiseaseFree', 0, ifelse(clinical$DFS_STATUS == 'Recurred/Progressed', 1, NA))
   clinical$X_DFS <- as.numeric(clinical$DFS_MONTHS)*30.4167

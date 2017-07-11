@@ -17,8 +17,13 @@ add_mutation <- function (Eset,
                           mutations,
                           multiple="all"
                           ) {
+#Eset <- old_eset
+#View(mutationdata)
 
   for(i in 1:length(mutations)){
+    if(!mutations[i] %in% mutationdata[,1]){
+      stop(paste(mutations[i], "not in gene or patient list"))
+    }
     mutation_patients <- data.frame(unique(substr(mutationdata[mutationdata[,1]==mutations[i],16],1,12)),stringsAsFactors=FALSE)
     colnames(mutation_patients) <- "PATIENT_ID"
     mutation_patients[,mutations[i]] <- "mutated"

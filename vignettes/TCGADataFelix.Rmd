@@ -192,10 +192,16 @@ x         | one gene using `"gene"`
 x         | multiple genes using `c("gene1","gene2","gene3",...)`
 x         | a factor from the clinical dataset, e.g.: `"patient.neoplasm_histologic_grade"`
 additional  | a factor from the clinical dataset, e.g.: `"patient.neoplasm_histologic_grade"`
-additional  | multiple factors from the clinical dataset, e.g. `c("grade","age")`
+additional  | multiple factors from the clinical dataset, e.g. `c("grade","AGE")`
 additional  | factorized mutations using: `paste(mutation,"status")`
 
 **The use of mutations and additional is not supported so far**
+
+The best to do this for now is to subset the ExpressionSet first by using
+
+```{r}
+subset_eset <- mutset[,!mutset$AJCC_PATHOLOGIC_TUMOR_STAGE %in% "Stage IV"]
+```
 
 ### Examples for *exclude*
 
@@ -313,6 +319,24 @@ p
 
 ```
 
+## Return Survival Dataframe
+
+The dataframe that was used to calculate the Cox Regression can be returned by using the parameter `return_df = T` 
+
+```{r, fig.width=8,fig.height=9}
+survival_df <- Survival_adaptable(x = c(gene), 
+                   Eset = mutset,
+                   mutation = mutations,
+                   p.val=F,
+                   legend_position = "bottom",
+                   legend_rows = 4,
+                   average = "median",
+                   optimal=F,
+                   plot_cutpoint=F,
+                   return_df = T
+                   )
+head(survival_df)
+```
 
 
 # Plot the log hazard ration using **smoothCoxph_man**
@@ -332,4 +356,25 @@ hazard_list(x = c("FOXA2","FOXD1","TSPAN8","ICAM1"),
             Eset = Eset,
             additional = "GRADE",
             exclude = c("GX"))
+```
+
+# Calculate a Multivariate Analysis
+
+Exclude does not work for now, subset the ExpressionSet if anything should be excluded from analysis
+
+```{r}
+
+test <- Multivariate(x = c("FOXA2"), 
+             Eset = mutset,
+             factor = c("ETHNICITY","VHL","PBRM1"),
+             #exclude = c("LATINO"), 
+             average = "median",
+             optimal=T, 
+             plot_cutpoint=F,
+             return_df=F,
+             coef=T,
+             survival="overall"
+             )
+test
+
 ```

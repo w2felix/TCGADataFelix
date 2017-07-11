@@ -8,7 +8,7 @@ Survival_adaptable(x, Eset, value = 0, additional, mutation, exclude,
   p.val = FALSE, xlabel, ylabel, logrisk = TRUE, legend_position,
   legend_rows = 1, average = "mean", optimal = FALSE,
   plot_cutpoint = FALSE, risk_table = TRUE, plot_title = "",
-  survival = "overall", ...)
+  survival = "overall", return_df = FALSE, ...)
 }
 \arguments{
 \item{x}{a character vector with 1 or more gene names or a column of the clinical patient data}
@@ -48,6 +48,8 @@ Numeric: Devided into two groups
 \item{plot_title}{Title of the Plot, if not stated, no title will be shown}
 
 \item{survival}{For overall survival = "overall", for disease free survival: survival = "DFS"}
+
+\item{return_df}{Returns the Dataframe that is used for calculatinf the Cox Regression}
 
 \item{...}{additional variables that can be added}
 }
