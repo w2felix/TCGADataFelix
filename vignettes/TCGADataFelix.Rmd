@@ -360,7 +360,7 @@ hazard_list(x = c("FOXA2","FOXD1","TSPAN8","ICAM1"),
 
 # Calculate a Multivariate Analysis
 
-Exclude does not work for now, subset the ExpressionSet if anything should be excluded from analysis
+To exclude data: Subset the ExpressionSet if anything should be excluded from analysis
 
 ```{r}
 
@@ -368,7 +368,6 @@ Multivariateanalysis <- Multivariate(x = c("FOXA2"),
              Eset = mutset,
              factor = c("ETHNICITY","VHL","PBRM1"),
              factor_list= F,
-             #exclude = c("LATINO"), 
              average = "median",
              optimal=T, 
              plot_cutpoint=F,
