@@ -4,6 +4,7 @@
 #' @param mutations a vector of mutations to be added
 #' @param multiple If more than one mutation was entered, a additional combined column will be added. multiple = "all" -> all mutations present in the patient, multiple = "one" -> mutation in at least one patient
 #'
+#'
 #' @return Expression Set where the mutations will are added as a column in the pData table
 #' @export
 #'

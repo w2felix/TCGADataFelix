@@ -19,6 +19,8 @@
 #' @return The summary of the multivariate analysis
 #' @export
 #'
+#' @import survival
+#'
 #' @examples
 #' \dontrun{
 #' Multivariate(x = c("FOXA2"), Eset = Eset,
@@ -108,17 +110,22 @@ Multivariate <- function (x, Eset,
       Biobase::pData(Eset)$Median <- Biobase::rowMedians(df_matrix)
       Biobase::pData(Eset)$Mean <- base::rowMeans(df_matrix)
 
-      if(value!="q"){
-        if(optimal){
-          value_cutpoint <- survminer::surv_cutpoint(Biobase::pData(Eset), time="time", event="event", variables = gene)
-          value_sum <- summary(value_cutpoint)
-          value <- value_sum$cutpoint
-          value <- mean(value)
-          if(plot_cutpoint){
-            graphics::par(mfrow=c(2,1))
-            return(graphics::plot(value_cutpoint, gene, palette = "npg"))
-          }
+      if(optimal){
+        value_cutpoint <- survminer::surv_cutpoint(Biobase::pData(Eset), time="time", event="event", variables = gene)
+        value_sum <- summary(value_cutpoint)
+        value <- value_sum$cutpoint
+        value <- mean(value)
+        if(plot_cutpoint){
+          graphics::par(mfrow=c(2,1))
+          return(graphics::plot(value_cutpoint, gene, palette = "npg"))
         }
+      } else {
+        if(missing(value)){
+          stop("You have either to define a numerical value to seperate the groups by setting e.g. value = 0, or using the optimal cutoff by using optimal=T or you can define the groups by its quantiles by using value = \"q\"")
+        }
+      }
+
+      if(value!="q"){
         Biobase::pData(Eset)$expression <- ifelse(Biobase::pData(Eset)$Median > value, "High Expression", "Low Expression")
       }
       if(value == "q"){
@@ -167,8 +174,8 @@ Multivariate <- function (x, Eset,
   if(return_df){
     return(Biobase::pData(Eset))
   }
-
-  multivariate <- survival::coxph(stats::as.formula(paste("Surv(time, event) ~", paste(factor, collapse = " + "), "+ expression")), data = Biobase::pData(Eset))
+  Survobject <- stats::as.formula(paste("Surv(time, event) ~", paste(factor, collapse = " + "), "+ expression"))
+  multivariate <- survival::coxph(Survobject, data = Biobase::pData(Eset))
 
   if(!coef){
     return(multivariate)
