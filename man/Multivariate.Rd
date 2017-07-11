@@ -4,7 +4,7 @@
 \alias{Multivariate}
 \title{TCGA Multivariate Analysis}
 \usage{
-Multivariate(x, Eset, value = 0, factor, mutation, exclude,
+Multivariate(x, Eset, value = 0, factor, factor_list = F, mutation, exclude,
   average = "mean", optimal = FALSE, survival = "overall",
   return_df = FALSE, plot_cutpoint = F, coef = F, ...)
 }
@@ -18,6 +18,8 @@ Numeric: Devided into two groups
 "q": 25 \% quantile, 25-75 \% quantile and 75 \% quantile}
 
 \item{factor}{Additional covariate for the multivariate analysis}
+
+\item{factor_list}{Returns the levels of factors in the analysis}
 
 \item{mutation}{Vector of mutations, that were added using the add_mutation() function}
 

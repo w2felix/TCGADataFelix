@@ -364,9 +364,10 @@ Exclude does not work for now, subset the ExpressionSet if anything should be ex
 
 ```{r}
 
-test <- Multivariate(x = c("FOXA2"), 
+Multivariateanalysis <- Multivariate(x = c("FOXA2"), 
              Eset = mutset,
              factor = c("ETHNICITY","VHL","PBRM1"),
+             factor_list= F,
              #exclude = c("LATINO"), 
              average = "median",
              optimal=T, 
@@ -375,6 +376,18 @@ test <- Multivariate(x = c("FOXA2"),
              coef=T,
              survival="overall"
              )
-test
+
+Multivariateanalysis
+
+# Return List of Factors used for the analysis:
+Multivariate(x = c("FOXA2"), 
+             Eset = mutset,
+             factor = c("ETHNICITY","VHL","PBRM1"),
+             factor_list= T,
+             #exclude = c("LATINO"), 
+             average = "median",
+             survival="overall"
+             )
+
 
 ```
