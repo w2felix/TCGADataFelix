@@ -4,20 +4,18 @@
 \alias{Multivariate}
 \title{TCGA Multivariate Analysis}
 \usage{
-Multivariate(x, Eset, value = 0, factor, factor_list = F, mutation,
+Multivariate(x, Eset, value = 0, factor_list = F, mutation,
   average = "mean", optimal = FALSE, survival = "overall",
-  return_df = FALSE, plot_cutpoint = F, coef = F, ...)
+  return_df = FALSE, plot_cutpoint = F, coef = F, combined = T, ...)
 }
 \arguments{
-\item{x}{A character vector with 1 or more gene names or a column of the clinical patient data}
+\item{x}{A character vector with 1 or more gene names and/or columns of the clinical patient data}
 
 \item{Eset}{An Expression Set}
 
-\item{value}{Defines the value to subdivide the gene expression groups.
-Numeric: Devided into two groups
+\item{value}{Defines the value to subdivide gene expression groups.
+Numeric: Devided into two groups (for more genes use value = c(cutpoint gene 1, cutpoint gene 2, ...))
 "q": 25 \% quantile, 25-75 \% quantile and 75 \% quantile}
-
-\item{factor}{Additional covariate for the multivariate analysis}
 
 \item{factor_list}{Returns the levels of factors in the analysis}
 
@@ -46,7 +44,7 @@ TCGA Multivariate Analysis
 \examples{
 \dontrun{
 Multivariate(x = c("FOXA2"), Eset = Eset,
-value = 0, factor = "ETHNICITY",
+value = 0, extrafactor = "ETHNICITY",
 exclude = c("LATINO"), average = "median",
 optimal=T, plot_cutpoint=F)
 }

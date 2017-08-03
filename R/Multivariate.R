@@ -1,11 +1,10 @@
 #' TCGA Multivariate Analysis
 #'
-#' @param x A character vector with 1 or more gene names or a column of the clinical patient data
+#' @param x A character vector with 1 or more gene names and/or columns of the clinical patient data
 #' @param Eset An Expression Set
-#' @param value Defines the value to subdivide the gene expression groups.
-#' Numeric: Devided into two groups
+#' @param value Defines the value to subdivide gene expression groups.
+#' Numeric: Devided into two groups (for more genes use value = c(cutpoint gene 1, cutpoint gene 2, ...))
 #' "q": 25 \% quantile, 25-75 \% quantile and 75 \% quantile
-#' @param factor Additional covariate for the multivariate analysis
 #' @param factor_list Returns the levels of factors in the analysis
 #' @param mutation Vector of mutations, that were added using the add_mutation() function
 #' @param average for more than one gene, how the value of the averaged z-score is calculated, either median or mean
@@ -24,15 +23,15 @@
 #' @examples
 #' \dontrun{
 #' Multivariate(x = c("FOXA2"), Eset = Eset,
-#' value = 0, factor = "ETHNICITY",
+#' value = 0, extrafactor = "ETHNICITY",
 #' exclude = c("LATINO"), average = "median",
 #' optimal=T, plot_cutpoint=F)
 #' }
 #'
-
-Multivariate <- function (x, Eset,
+#x <- "SPDEF"
+Multivariate <- function (x,
+                          Eset,
                           value = 0,
-                          factor,
                           factor_list=F,
                           mutation,
                           average = "mean",
@@ -41,148 +40,194 @@ Multivariate <- function (x, Eset,
                           return_df=FALSE,
                           plot_cutpoint=F,
                           coef=F,
+                          combined=T,
                           ...) {
 
   if(survival=="overall") {
-    Biobase::pData(Eset)$time <- Biobase::pData(Eset)$X_OS
+    Biobase::pData(Eset)$time <- as.numeric(Biobase::pData(Eset)$X_OS)
     Biobase::pData(Eset)$event <- Biobase::pData(Eset)$X_OS_IND
   } else if(survival=="DFS"){
-    Biobase::pData(Eset)$time <- Biobase::pData(Eset)$DFS_MONTH
-    Biobase::pData(Eset)$event <- ifelse(Biobase::pData(Eset)$DFS_STATUS=="Recurred/Progressed",1,0)
+    Biobase::pData(Eset)$time <- as.numeric(Biobase::pData(Eset)$X_DFS)
+    Biobase::pData(Eset)$event <- Biobase::pData(Eset)$X_DFS_IND
   } else {
-    stop(paste("You cannot use \"", survival, "\" as censoring"), sep="")
+    stop(paste("You cannot use \"", survival, "\" as censoring, use \"overall\" or \"DFS\""), sep="")
   }
 
-  if(x %in% colnames(Biobase::pData(Eset))){
-    gene <- ""
-  } else {
-    gene <- x
-  }
-  #gene <- c("BCAT1","TP53")
+  # Check if variables exist in dataframe
 
-  if(gene!=""){
-    if(length(gene)>1){
-      if(!gene %in% rownames(Biobase::exprs(Eset))){
-        stop(paste(paste(gene[!gene %in% rownames(Biobase::exprs(Eset))], collapse=" & "), "not in gene or patient list"))
+  # which exist in pData?
+  exist_in_pData <- x[x %in% colnames(Biobase::pData(Eset))]
+  exist_in_exprs <- x[x %in% rownames(Biobase::exprs(Eset))]
+
+  if(sum(x %in% c(exist_in_exprs,exist_in_pData))<length(x)){
+    not_existing <- x[!x %in% colnames(Biobase::pData(Eset)) & !x %in% rownames(Biobase::exprs(Eset))]
+    stop(paste(paste(not_existing,collapse = " & "), "does not exist in clinical and expression data"))
+  }
+
+  for(i in 1:length(exist_in_exprs)){
+    Biobase::pData(Eset)[,exist_in_exprs] <- Biobase::exprs(Eset)[exist_in_exprs,]
+    Biobase::pData(Eset)[,paste(exist_in_exprs,"_value",sep="")] <- Biobase::exprs(Eset)[exist_in_exprs,]
+  }
+
+  # remove NA
+
+  Biobase::pData(Eset) <- Biobase::pData(Eset)[!is.na(Biobase::pData(Eset)$event), ]
+  Biobase::pData(Eset) <- Biobase::pData(Eset)[!is.na(Biobase::pData(Eset)$time), ]
+  if(length(x)>1){
+    Biobase::pData(Eset) <-Biobase::pData(Eset)[apply(Biobase::pData(Eset)[,x],1,function (x) sum(!is.na(x)))==length(x), ]
+    Biobase::pData(Eset) <-Biobase::pData(Eset)[apply(Biobase::pData(Eset)[,x],1,function (x) sum(x!="[Not Available]"))==length(x), ]
+    Biobase::pData(Eset) <-Biobase::pData(Eset)[apply(Biobase::pData(Eset)[,x],1,function (x) sum(x!="[Not Applicable]"))==length(x), ]
+  } else {
+    Biobase::pData(Eset) <-Biobase::pData(Eset)[!is.na(x), ]
+    Biobase::pData(Eset) <-Biobase::pData(Eset)[x!="[Not Available]", ]
+    Biobase::pData(Eset) <-Biobase::pData(Eset)[x!="[Not Applicable]", ]
+  }
+
+  if(length(exist_in_exprs)>0){
+    if(optimal){
+      if(!missing(value)){
+        warning("Value: When Optimal cutpoint is calculated, the value parameter will be ignored")
       }
-      Biobase::pData(Eset)[,gene] <- Biobase::exprs(Eset)[gene,]
+      value_cutpoint <- survminer::surv_cutpoint(Biobase::pData(Eset), time="time", event="event", variables = exist_in_exprs)
+      value_sum <- summary(value_cutpoint)
+      value_single <- value_sum$cutpoint
+      value_combined <- mean(value_single)
 
-    } else {
-      if(!gene %in% rownames(Biobase::exprs(Eset))){
-        stop(paste(gene, "not in gene or patient list"))
+      if(plot_cutpoint){
+        graphics::par(mfrow=c(2,1))
+        return(graphics::plot(value_cutpoint, exist_in_exprs, palette = "npg"))
       }
-      Biobase::pData(Eset)[,gene] <- Biobase::exprs(Eset)[gene,]
-    }
-  } else {
-    Biobase::pData(Eset)[,x] <- as.factor(Biobase::pData(Eset)[,x])
-  }
-
-  # Remove empty rows
-  Biobase::pData(Eset) <- Biobase::pData(Eset)[!is.na(Biobase::pData(Eset)$event) & !is.na(Biobase::pData(Eset)$time),  ]
-  #Eset <- mutset
-  #factor <- "ETHNICITY"
-  if (!missing(factor)) {
-    for(i in 1:length(factor)){
-      Biobase::pData(Eset)[,factor[i]] <- ifelse(Biobase::pData(Eset)[,factor[i]]=="[Not Available]",NA,Biobase::pData(Eset)[,factor[i]])
-      Biobase::pData(Eset) <- Biobase::pData(Eset)[!is.na(Biobase::pData(Eset)[,factor[i]]), ]
-     }
-  }
-
-  if(gene==""){
-    Biobase::pData(Eset) <- Biobase::pData(Eset)[!is.na(Biobase::pData(Eset)[,x]),]
-    Biobase::pData(Eset) <- droplevels(Biobase::pData(Eset)[,x])
-  }
-
-
-  if(gene!=""){
-    if(length(gene)>1){
-
-      ## Z-Score + normalization has already been done for the geneset itself
-
-      #   for(i in 3:(length(z)-1)){
-      #     Z_score_1 <- z[,i] - mean(z[,i])
-      #     Z_score <- Z_score_1 / stats::sd(z[,i])
-      #     z[,i] <- Z_score
-      #   }
-
-      df_matrix <- matrix(t(Biobase::pData(Eset)[,gene]), ncol = length(gene), byrow=TRUE)
-
-      Biobase::pData(Eset)$Median <- Biobase::rowMedians(df_matrix)
-      Biobase::pData(Eset)$Mean <- base::rowMeans(df_matrix)
-
-      if(optimal){
-        value_cutpoint <- survminer::surv_cutpoint(Biobase::pData(Eset), time="time", event="event", variables = gene)
-        value_sum <- summary(value_cutpoint)
-        value <- value_sum$cutpoint
-        value <- mean(value)
-        if(plot_cutpoint){
-          graphics::par(mfrow=c(2,1))
-          return(graphics::plot(value_cutpoint, gene, palette = "npg"))
+      two_groups <- T
+    } else if(missing(value)){
+      stop("Please let either an optimal cutpoint be calculated by optimal=TRUE, use a user defined cutpoint by value=X or divide the groups into their quantiles by value=\"q\"")
+     } else if(is.numeric(value)){
+       if(plot_cutpoint){
+         warning("plot_cutpoint: The Optimal cutpoint cannot be plotted when optimal is not TRUE, therefore plot_cutpoint is ignored")
+       }
+      if(length(value)==length(exist_in_exprs)){
+        value_single <- value
+      } else if(length(value)==1){
+        for(i in 1:length(exist_in_exprs)){
+          value_single[i] <- value
         }
       } else {
-        if(missing(value)){
-          stop("You have either to define a numerical value to seperate the groups by setting e.g. value = 0, or using the optimal cutoff by using optimal=T or you can define the groups by its quantiles by using value = \"q\"")
-        }
+        stop("The cutpoint value needs to be either as long as genes to be analyzed: \"value = c(gene1, gene2, gene3,...)\"\nor value needs to have one value for all genes \"value = X\"")
       }
 
-      if(value!="q"){
-        Biobase::pData(Eset)$expression <- ifelse(Biobase::pData(Eset)$Median > value, "High Expression", "Low Expression")
-      }
-      if(value == "q"){
-        if(optimal){
-          stop("optimal cutpoint not possible if separation of patients by quantiles")
-        }
-        quantile_values <- stats::quantile(Biobase::pData(Eset)$Median, c(.25, .50, .75))
-        Biobase::pData(Eset)$expression <- ifelse(Biobase::pData(Eset)$Median < quantile_values[1], "Lower Quantile", ifelse(Biobase::pData(Eset)$Median < quantile_values[3], "Intermediate", "Upper Quantile"))
-      }
-      Biobase::pData(Eset)$expression <- as.factor(Biobase::pData(Eset)$expression)
-
-    } else {
-      ## Z-Score + normalization has already been done for the geneset itself
-      # Z_score_1 <- z[,3] - mean(z[,3])
-      # Z_score <- Z_score_1 / stats::sd(z[,3])
-      # z[,3] <- Z_score
-
-      if(value!="q"){
-        if(optimal){
-          value_cutpoint <- survminer::surv_cutpoint(Biobase::pData(Eset), time="time", event="event", variables = gene)
-          value_sum <- summary(value_cutpoint)
-          value <- value_sum$cutpoint
-          if(plot_cutpoint){
-            p <- graphics::plot(value_cutpoint, gene, palette = "npg")
-            return(p)
-          }
-        }
-        Biobase::pData(Eset)$expression <- ifelse(Biobase::pData(Eset)[,gene] > value, "High Expression", "Low Expression")
-      } else if(value == "q"){
-        if(optimal){
-          stop("optimal cutpoint not possible if separation of patients by quantiles")
-        }
-        quantile_values <- stats::quantile(Biobase::pData(Eset)[,gene], c(.25, .50, .75))
-        Biobase::pData(Eset)$expression <- ifelse(Biobase::pData(Eset)[, gene] < quantile_values[1], "Lower Quantile", ifelse(Biobase::pData(Eset)[, gene] < quantile_values[3], "Intermediate", "Upper Quantile"))
-      }
+      value_combined <- mean(value)
+      two_groups <- T
+    } else if(value=="q") {
+      two_groups <- F
     }
 
-    Biobase::pData(Eset)$expression <- as.factor(Biobase::pData(Eset)$expression)
+    if(two_groups){
+      if(length(exist_in_exprs)>1){
+        df_matrix <- matrix(t(Biobase::pData(Eset)[,exist_in_exprs]), ncol = length(exist_in_exprs), byrow=TRUE)
+        Biobase::pData(Eset)$median <- Biobase::rowMedians(df_matrix)
+        Biobase::pData(Eset)$mean <- base::rowMeans(df_matrix)
+        if(average=="mean"){
+          Biobase::pData(Eset)$combined <- ifelse(apply(Biobase::pData(Eset)[,exist_in_exprs],1,mean) > value_combined,
+                                                  "High Expression",
+                                                  "Low Expression")
+        } else if(average=="median"){
+          Biobase::pData(Eset)$combined <- ifelse(apply(Biobase::pData(Eset)[,exist_in_exprs],1,stats::median) > value_combined,
+                                                  "High Expression",
+                                                  "Low Expression")
+        } else {
+          stop("Multiple genes can only be combined using \"median\" or \"mean\" as the parameter for `average`to divide their expression")
+        }
+
+      }
+
+      for(i in 1:length(exist_in_exprs)){
+        Biobase::pData(Eset)[,exist_in_exprs[i]] <- ifelse(Biobase::pData(Eset)[,exist_in_exprs[i]] > value_single[i],
+                                                           "High Expression",
+                                                           "Low Expression")
+      }
+    } else {
+      if(length(exist_in_exprs)>1){
+        quantile_values <- apply(Biobase::pData(Eset)[,exist_in_exprs],2,function(x) stats::quantile(x,c(.25, .50, .75)))
+        if(combined){
+          df_matrix <- matrix(t(Biobase::pData(Eset)[,exist_in_exprs]), ncol = length(exist_in_exprs), byrow=TRUE)
+          Biobase::pData(Eset)$median <- Biobase::rowMedians(df_matrix)
+          Biobase::pData(Eset)$mean <- base::rowMeans(df_matrix)
+
+          Biobase::pData(Eset)$combined <- ifelse(Biobase::pData(Eset)[,average] < mean(quantile_values[1,]), "Lower Quantile", ifelse(Biobase::pData(Eset)$Median < mean(quantile_values[3,]), "Intermediate", "Upper Quantile"))
+        }
+
+        for(i in 1:length(exist_in_exprs)){
+          Biobase::pData(Eset)[,exist_in_exprs[i]] <- ifelse(Biobase::pData(Eset)[,exist_in_exprs[i]] < quantile_values[1,i], "Lower Quantile", ifelse(Biobase::pData(Eset)[,exist_in_exprs[i]] < quantile_values[3,i], "Intermediate", "Upper Quantile"))
+        }
+
+      } else {
+        quantile_values <- stats::quantile(Biobase::pData(Eset)[,exist_in_exprs], c(.25, .50, .75))
+        Biobase::pData(Eset)[,exist_in_exprs] <- ifelse(Biobase::pData(Eset)[,exist_in_exprs] < quantile_values[1], "Lower Quantile", ifelse(Biobase::pData(Eset)[,exist_in_exprs] < quantile_values[3], "Intermediate", "Upper Quantile"))
+      }
+    }
+  } else {
+    if(optimal){
+      warning("Optimal & Value: Optimal cutpoint cannot be calculated for clinical data and patients not divided by it or any given value, parameter optimal and value will be ignored")
+    }
+    if(!missing(value)){
+      warning("Value: Clinical data cannot be divided into groups by a user defined gene expression value, parameter value and optimal will be ignored")
+    }
+    if(combined & length(exist_in_exprs)==1){
+      warning("Combined: Combined gene expression cannot be calculated if only one gene there to be analyzed, parameter optimal will be ignored")
+    } else if(combined){
+      warning("Combined: Combined gene expression cannot be calculated if no genes are there to be analyzed, parameter optimal will be ignored")
+    }
   }
 
   if(factor_list){
-    factor_list <- sapply(Biobase::pData(Eset)[,factor],function (x) levels(as.factor(x)))
-    return(factor_list)
+    if(length(x)>1){
+      return_factor_list <- sapply(Biobase::pData(Eset)[,x],function (x) levels(as.factor(x)))
+    } else {
+      return_factor_list <- paste(x,": ",paste(levels(factor(Biobase::pData(Eset)[,x])),collapse = ", "), sep="")
+    }
+    if(return_df){
+      warning("return_df: Please use \"factor_list = FALSE\" to return the data frame")
+    }
+    return(return_factor_list)
   }
 
   if(return_df){
     return(Biobase::pData(Eset))
   }
-  Survobject <- stats::as.formula(paste("Surv(time, event) ~", paste(factor, collapse = " + "), "+ expression"))
-  multivariate <- survival::coxph(Survobject, data = Biobase::pData(Eset))
+
+  if(length(exist_in_pData)!=0){
+    pData_formula <- paste(paste("`", exist_in_pData, "`", sep=""),collapse = " + ")
+  } else {
+    pData_formula <- NULL
+  }
+
+  if(length(exist_in_exprs)!=0){
+    exprs_formula <- paste(paste("`", exist_in_exprs, "`", sep=""),collapse = " + ")
+    if(length(exist_in_pData!=0)){
+      exprs_formula <- paste("+",exprs_formula)
+    }
+  } else {
+    exprs_formula <- NULL
+  }
+
+  if(combined){
+    additional_combined <- "+ combined"
+  } else {
+    additional_combined <- NULL
+  }
+
+  formula <- paste(pData_formula,exprs_formula,additional_combined)
+
+  Survobject <- stats::as.formula(paste("Surv(time, event) ~", formula))
+  multivariate <-  do.call(survival::coxph,
+                           list(formula = Survobject,
+                                data = Biobase::pData(Eset)
+                           )
+  )
 
   if(!coef){
     return(multivariate)
   }
 
   coefficients_multivariate <- stats::coef(summary(multivariate))
-
   coefficients_multivariate
-
 }

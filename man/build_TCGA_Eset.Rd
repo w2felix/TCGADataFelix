@@ -12,6 +12,8 @@ build_TCGA_Eset(clinical_file, expression_file, source, skip = FALSE)
 \item{expression_file}{PATH of the expression data from TCGA, e.g.: "../../../Projects/TCGA-Elisa/RNA/LAML.rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.data.txt"}
 
 \item{source}{Define the source of the data. "cBio" and "cBio_z_score" for cBioportal Data, "firehose" for Firehose data.}
+
+\item{skip}{Please Check in the clinical file in which row the header column appears. The amount of rows skiped should be entered as e.g. skip = 5.}
 }
 \value{
 ExpressionSet

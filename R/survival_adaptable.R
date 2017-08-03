@@ -2,94 +2,70 @@
 #'
 #' \code{survival_adaptable()} plots a highly modifyable survival estimator using the survminer package as a basis
 #'
-#' @param x a character vector with 1 or more gene names or a column of the clinical patient data
 #' @param Eset An Expression Set
+#' @param survival For overall survival = "overall", for disease free survival: survival = "DFS"
+#' @param clinical a character vector with one or more factors of the clinical patient data
+#' @param mutation a character vector with one or more factors of the patients mutation data added to the ExpressionSet by add_mutation()
+#' @param expression a character vector with one or more gene expression data
+#' @param optimal calculate the optimal cutpoint using the max_stat ranking method, will overide the value value
 #' @param value Defines the value to subdivide the gene expression groups.
 #' Numeric: Devided into two groups
 #' "q": 25 \% quantile, 25-75 \% quantile and 75 \% quantile
-#' @param additional Additional covariate to subset groups
-#' @param mutation Vector of mutations, that were added using the add_mutation() function
-#' @param exclude Factors to exclude, when no gene is entered but another factor from the clinical patient data, it can also be excluded, the order of the to be exlcuded variables does not matter.
-#' @param p.val display the p-Value on the graph
+#' @param gene_signature For more than one gene, how the genes for the signature are averaged, either "median" or "mean". If left out, all gene expression combinations will be plotted individually
+#' @param groupings You can group factors from the clinical data
+#' @param exclude Factors to exclude from any of the given clinical, expression or mutation data. The order of the to be exlcuded variables does not matter.
+#' @param show_only Works only if exclude is used. If you want to exclude specific values but only show the regression for either "gene expression", "clinical" data or "mutation data"
+#' @param p.val Displays the p-Value on the graph, only possible if a single factor is analyzed
+#' @param logrisk Displays how the p-value was calculated
 #' @param xlabel User defined x-axis label
 #' @param ylabel User defined y-axis label
-#' @param logrisk logrisk?!
-#' @param legend_position where should the legend be? doesn't work with theme_bw
+#' @param plot_title Title of the Plot, if not stated, no title will be shown
+#' @param legend_position Where should the legend be? doesn't work with theme_bw
 #' @param legend_rows How many rows are used for the legend
-#' @param average for more than one gene, how the value of the averaged z-score is calculated, either median or mean
-#' @param optimal calculate the optimal cutpoint, will overide the value value when numeric, does not work when value = "q"
 #' @param plot_cutpoint Plot the graph how the optimal cutpoint was calculated, normal survival plot will be REPLACED by surv_cutpoint: Determine the optimal cutpoint for each variable using ’maxstat’
 #' @param risk_table If the risk table is shown or not, use FALSE or TRUE
-#' @param plot_title Title of the Plot, if not stated, no title will be shown
-#' @param survival For overall survival = "overall", for disease free survival: survival = "DFS"
 #' @param return_df Returns the Dataframe that is used for calculatinf the Cox Regression
-#' @param ... additional variables that can be added
+#' @param return_fit Returns the fit of the Regression. [[1]] = Fit, [[2]] = p-value, [[3]] = Coxph
+#' @param factor_list Returns the list of factors that are in the dataframe. These factors can be used e.g. for exclusen.
+#' @param ... Additional variables that can be passed over to the ggsurvplot function of the survminer package
 #'
-#' @return A survival Estimator
+#' @return The modified survival Estimator from the survminer package to be able to handle TCGA Data
 #' @export
+#'
+#' @import survival
+#'
 #'
 #' @examples
 #' \dontrun{
-#' Survival_adaptable(x = c("FOXA2"), Eset = Eset,
-#' value = 0, additional = "pathologic_stage",
-#' exclude = c("Stage IV"), p.val=TRUE,
+#' Survival_adaptable(expression = c("FOXA2"), Eset = Eset,
+#' optimal = TRUE, p.val=TRUE,
 #' xlabel="Days", legend_position = "top", average = "median",
-#' optimal=T, plot_cutpoint=F,risk_table=TRUE)
+#' plot_cutpoint=F,risk_table=TRUE)
 #' }
-Survival_adaptable <- function (x, Eset,
-                                value = 0,
-                                additional,
+Survival_adaptable <- function (Eset,
+                                survival="overall",
+                                clinical,
                                 mutation,
+                                expression,
+                                optimal = FALSE,
+                                value,
+                                gene_signature,
+                                groupings= FALSE,
                                 exclude,
+                                show_only=FALSE,
                                 p.val = FALSE,
+                                logrisk = TRUE,
                                 xlabel,
                                 ylabel,
-                                logrisk = TRUE,
+                                plot_title = "",
                                 legend_position,
                                 legend_rows = 1,
-                                average = "mean",
-                                optimal = FALSE,
                                 plot_cutpoint=FALSE,
                                 risk_table = TRUE,
-                                plot_title = "",
-                                survival="overall",
                                 return_df=FALSE,
+                                return_fit=FALSE,
+                                factor_list=FALSE,
                                 ...) {
-
-
-  if (missing(x)) {
-    stop("You have to define a gene you want to calculate survival")
-  }
-
-  if(!missing(mutation)){
-    if(missing(additional)){
-      if(length(mutation)>1){
-        additional <- paste(mutation,  collapse = " & ")
-      } else {
-        additional <- mutation
-      }
-    } else {
-      stop("You cannot use mutations and additional covariates together at the moment")
-    }
-  }
-
-  if(survival=="overall") {
-    time <- Biobase::pData(Eset)$X_OS
-    event <- Biobase::pData(Eset)$X_OS_IND
-  } else if(survival=="DFS"){
-    time <- Biobase::pData(Eset)$DFS_MONTH
-    event <- Biobase::pData(Eset)$DFS_STATUS
-    event <- ifelse(event=="Recurred/Progressed",1,0)
-  } else {
-    stop(paste("You cannot use \"", survival, "\" as censoring"), sep="")
-  }
-
-
-  if(x %in% colnames(Biobase::pData(Eset))){
-    gene <- ""
-  } else {
-    gene <- x
-  }
 
   if (missing(xlabel)){
     xlabel <- "time"
@@ -98,411 +74,398 @@ Survival_adaptable <- function (x, Eset,
     ylabel <- "Survival"
   }
 
-  # get the data to the Surv variables
-  # Adding a column with gene expression labels to the phenotype, updates if new values
+  if (missing(clinical) & missing(mutation) & missing(expression)) {
+    stop("You have to define at least one gene, mutation or clinical feature you want to calculate survival estimators")
+  }
 
-  z <- data.frame(time = time, event = event)
-  if(gene!=""){
-    if(length(gene)>1){
-      if(!gene %in% rownames(Biobase::exprs(Eset))){
-        stop(paste(paste(gene[!gene %in% rownames(Biobase::exprs(Eset))], collapse=" & "), "not in gene or patient list"))
-      }
-      z <- data.frame(time = time, event = event)
-      z[,gene] <- t(Biobase::exprs(Eset)[gene,])
-      rownames(z) <- colnames(Biobase::exprs(Eset)[gene,])
+  if(survival=="overall") {
+    time <- as.numeric(Biobase::pData(Eset)$X_OS)
+    event <- Biobase::pData(Eset)$X_OS_IND
+  } else if(survival=="DFS"){
+    time <- as.numeric(Biobase::pData(Eset)$X_DFS)
+    event <- Biobase::pData(Eset)$X_DFS_IND
+  } else {
+    stop(paste("You cannot use \"", survival, "\" as censoring, use \"overall\" or \"DFS\""), sep="")
+  }
 
-    } else {
-      if(!gene %in% rownames(Biobase::exprs(Eset))){
-        stop(paste(gene, "not in gene or patient list"))
-      }
-      z[,gene] <- Biobase::exprs(Eset)[gene,]
-      rownames(z) <- colnames(Biobase::exprs(Eset)[gene,])
+  # Check if variables exist in dataframe
+  not_existing_exprs <- NULL
+  not_existing_clinical <- NULL
+  not_existing_mutation <- NULL
+
+  if(!missing(clinical)){
+    exist_in_pData <- clinical[clinical %in% colnames(Biobase::pData(Eset))]
+    if(length(exist_in_pData)<length(clinical)){
+      not_existing_clinical <- clinical[!clinical %in% colnames(Biobase::pData(Eset))]
     }
   } else {
-    z[,x] <- as.factor(Biobase::pData(Eset)[,x])
+    exist_in_pData <- NULL
   }
-
-
-  if (missing(additional)){
-    z$additional <- 0
-  } else if (is.na(additional)){
-    z$additional <- 0
-  } else if (additional==""){
-    z$additional <- 0
-  } else if (!additional %in% colnames(Biobase::pData(Eset))){
-    stop(paste(additional, "not in phenotype list"))
+  if(!missing(expression)){
+    exist_in_exprs <- expression[expression %in% rownames(Biobase::exprs(Eset))]
+    if(length(exist_in_exprs)<length(expression)){
+      not_existing_exprs <- expression[!expression %in% rownames(Biobase::exprs(Eset))]
+    }
   } else {
-    z$additional <- as.factor(Biobase::pData(Eset)[,additional])
+    exist_in_exprs <- NULL
+  }
+  if(!missing(mutation)){
+    exist_in_mutation <- mutation[mutation %in% colnames(Biobase::pData(Eset))]
+    if(length(exist_in_mutation)<length(mutation)){
+      not_existing_mutation <- mutation[!mutation %in% colnames(Biobase::pData(Eset))]
+    }
+  } else {
+    exist_in_mutation <- NULL
   }
 
-  # Get rid of empty rows
-  z <- z[!is.na(z$event) & !is.na(z$time) & !is.na(z$additional) & !z$additional=="" & !z$additional=="[Not Available]",  ]
-  if(gene==""){
-    z <- z[!is.na(z[,x]),]
+
+
+  if(length(not_existing_mutation)!=0 | length(not_existing_exprs)!=0 | length(not_existing_clinical)!=0){
+    if(length(not_existing_mutation)!=0){
+      not_existing_mutation_stop <- paste(paste(not_existing_mutation,collapse = " & "), ": Not added to the ExpressionSet by add_mutation(); ",sep="")
+    } else {
+      not_existing_mutation_stop <- NULL
+    }
+    stop(paste(not_existing_mutation_stop,paste(c(not_existing_exprs,not_existing_clinical),collapse = " & "), ": not in the clinical and expression data", sep=""))
   }
 
+  if(length(exist_in_exprs)==1){
+    expression_data <- Biobase::exprs(Eset)[exist_in_exprs,]
+  } else {
+    expression_data <- t(Biobase::exprs(Eset)[exist_in_exprs,])
+  }
+
+  z <- data.frame(time, event, expression_data, Biobase::pData(Eset)[,exist_in_pData], Biobase::pData(Eset)[,exist_in_mutation])
+  colnames(z) <- c("time","event",exist_in_exprs,exist_in_pData,exist_in_mutation)
+
+  # remove NA
+
+  for(i in 1:length(colnames(z))){
+    z <- z[z[,i]!="[Not Available]",]
+    z <- z[z[,i]!="[Not Applicable]",]
+    z <- z[!is.na(z[,i]),]
+  }
+
+  if(dim(z)[1]==0){
+    stop("No data to do further analysis, maybe your clinical data factor was empty?")
+  }
+
+  # Groupings
+
+  if(groupings[1]!=FALSE){
+    grouping_factors <- "groupings"
+    r <- NULL
+    l <- NULL
+   # paste(c(exist_in_exprs,exist_in_mutation,exist_in_pData)[!groupings])
+
+      for(j in 3:length(colnames(z))){
+        grouping_indicator <- sapply(z[,j],function(x) x==groupings)
+        i <- j-2
+        r[[i]] <- apply(grouping_indicator,2,any)
+        if(i>1){
+          if(i>2){
+            l <- r[[i]] + l
+          } else {
+            l <- r[[i]] + r[[i-1]]
+          }
+
+        }
+      }
+      z$groupings <- ifelse(l>0,paste("Group:",paste(groupings,collapse=", ")),"rest")
+  } else {
+    grouping_factors <- NULL
+  }
 
   if (!missing(exclude)){
-    if(length(exclude)>1){
-      for(i in 1:length(exclude)){
-        z <- z[!z$additional==exclude[i], ]
-        if(gene==""){
-          z <- z[!z[,x]==exclude[i], ]
-        }
+    for(i in 1:length(exclude)){
+      for(j in 3:length(colnames(z))){
+        z <- z[!z[,j]==exclude[i], ]
       }
-    } else {
-      z <- z[!z$additional==exclude, ]
-      if(gene==""){
-        z <- z[!z[,x]==exclude, ]
-      }
-      if(length(rownames(z))==0){
-        stop("All data was excluded, no further analysis possible.")
-      }
+    }
+    if(length(rownames(z))==0){
+      stop("All data was excluded with your exclude settings, no further analysis possible.")
     }
   }
 
-  if (z$additional[1]!=0 && is.factor(z$additional)){
-    z$additional <- droplevels(z$additional)
-  }
-
-  if(gene==""){
-    z[,x] <- droplevels(z[,x])
-  }
-
-  if(gene!=""){
-    if(length(gene)>1){
-
-    ## Z-Score + normalization has already been done for the geneset itself
-
- #   for(i in 3:(length(z)-1)){
- #     Z_score_1 <- z[,i] - mean(z[,i])
- #     Z_score <- Z_score_1 / stats::sd(z[,i])
- #     z[,i] <- Z_score
- #   }
-
-      df_matrix <- matrix(t(z[,gene]), ncol = length(gene), byrow=TRUE)
-
-      z$Median <- Biobase::rowMedians(df_matrix)
-      z$Mean <- base::rowMeans(df_matrix)
-
-      if(value!="q"){
-        if(optimal){
-          value_cutpoint <- survminer::surv_cutpoint(z, time="time", event="event", variables = gene)
-          value_sum <- summary(value_cutpoint)
-          value <- value_sum$cutpoint
-          value <- mean(value)
-          if(plot_cutpoint){
-            graphics::par(mfrow=c(2,1))
-            return(graphics::plot(value_cutpoint, gene, palette = "npg"))
-          }
-        }
-        z$gene <- ifelse(z$Median > value, "High Expression", "Low Expression")
+  if(length(exist_in_exprs)>0){
+    if(optimal){
+      if(!missing(value)){
+        warning("Value: When Optimal cutpoint is calculated, the value parameter will be ignored")
       }
-      if(value == "q"){
-        if(optimal){
-          stop("optimal cutpoint not possible if separation of patients by quantiles")
-        }
-        quantile_values <- stats::quantile(z$Median, c(.25, .50, .75))
-        z$gene <- ifelse(z$Median < quantile_values[1], "Lower Quantile", ifelse(z$Median < quantile_values[3], "Intermediate", "Upper Quantile"))
+      value_cutpoint <- survminer::surv_cutpoint(z, time="time", event="event", variables = exist_in_exprs)
+      value_sum <- summary(value_cutpoint)
+      value_single <- value_sum$cutpoint
+      value_combined <- mean(value_single)
+
+      if(plot_cutpoint){
+        graphics::par(mfrow=c(2,1))
+        return(graphics::plot(value_cutpoint, exist_in_exprs, palette = "npg"))
       }
-      z$gene <- as.factor(z$gene)
-
-    } else {
-    ## Z-Score + normalization has already been done for the geneset itself
-   # Z_score_1 <- z[,3] - mean(z[,3])
-   # Z_score <- Z_score_1 / stats::sd(z[,3])
-   # z[,3] <- Z_score
-
-      if(value!="q"){
-        if(optimal){
-          value_cutpoint <- survminer::surv_cutpoint(z, time="time", event="event", variables = gene)
-          value_sum <- summary(value_cutpoint)
-          value <- value_sum$cutpoint
-          if(plot_cutpoint){
-            p <- graphics::plot(value_cutpoint, gene, palette = "npg")
-            return(p)
-          }
-        }
-        z$gene <- ifelse(z[,3] > value, "High Expression", "Low Expression")
-      } else if(value == "q"){
-        if(optimal){
-          stop("optimal cutpoint not possible if separation of patients by quantiles")
-        }
-        quantile_values <- stats::quantile(z[,3], c(.25, .50, .75))
-        z$gene <- ifelse(z[, 3] < quantile_values[1], "Lower Quantile", ifelse(z[, 3] < quantile_values[3], "Intermediate", "Upper Quantile"))
+      two_groups <- T
+    } else if(missing(value)){
+      stop("Please let either an optimal cutpoint be calculated by optimal=TRUE, use a user defined cutpoint by value=X or divide the groups into their quantiles by value=\"q\"")
+    } else if(is.numeric(value)){
+      if(plot_cutpoint){
+        warning("plot_cutpoint: The Optimal cutpoint cannot be plotted when optimal is not TRUE, therefore plot_cutpoint is ignored")
       }
-    }
-
-    z$gene <- as.factor(z$gene)
-  }
-
-
-  if(gene!=""){
-    if(length(gene)>1){
-      for(i in 1:length(gene)){
-        z <- z[!is.na(z[,gene[i]]), ]
-      }
-      if(average=="mean"){
-        z <- z[order(z$Mean), ]
-        coxph1 <- survival::coxph(survival::Surv(time, event) ~ Mean, data = z)
+      if(length(value)==length(exist_in_exprs)){
+        value_single <- value
+      } else if(length(value)==1){
+        for(i in 1:length(exist_in_exprs)){
+          value_single[i] <- value
+        }
       } else {
-        z <- z[order(z$Median), ]
-        coxph1 <- survival::coxph(survival::Surv(time, event) ~ Median, data = z)
-      }
-    } else {
-      z <- z[!is.na(z$gene), ]
-      z <- z[order(z$gene), ]
-      coxph1 <- survival::coxph(survival::Surv(time, event) ~ gene, data = z)
-    }
-  } else {
-    z <- z[order(z[,x]), ]
-    z2 <- z
-    colnames(z2)[3] <- "factor"
-    coxph1 <- survival::coxph(survival::Surv(time, event) ~ factor, data = z2)
-  }
-
-  coeffs <- stats::coef(summary(coxph1))
-
-
-
-  if (z$additional[1]!=0){
-    if(p.val==TRUE){
-
-      # The second survdiff() argument, rho, designates the weights according to ^S(t)p
-      # and may be any numeric  value. The default is rho=0
-      # and corresponds to the log-rank test. The Peto& Peto modi cation of the Gehan-Wilcoxon test
-      # is computed using rho=1
-      if(gene!=""){
-        p_value_survdiff <- survival::survdiff(survival::Surv(time, event) ~ gene + additional, data = z, rho=1)
-        p.value = 1 - stats::pchisq(p_value_survdiff$chisq, length(p_value_survdiff$n) - 1)
-      } else {
-        p_value_survdiff <- survival::survdiff(survival::Surv(time, event) ~ factor + additional, data = z2, rho=1)
-        p.value = 1 - stats::pchisq(p_value_survdiff$chisq, length(p_value_survdiff$n) - 1)
+        stop("The cutpoint value needs to be either as long as genes to be analyzed: \"value = c(gene1, gene2, gene3,...)\"\nor value needs to have one value for all genes \"value = X\"")
       }
 
+      value_combined <- mean(value)
+      two_groups <- T
+    } else if(value=="q") {
+      two_groups <- F
     }
 
-    # get Labels for legend
-
-    z$additional <- droplevels(z$additional)
-    if(gene!=""){
-      z$gene <- droplevels(z$gene)
-      numbers_quantiles <- data.frame(table(z$additional, z$gene))
-
-      # t 1/2
-
-      median_survival <- survival::survfit(survival::Surv(time, event) ~ gene + additional, data = z)
-      median_survival_df <- summary(median_survival)
-      #     median_survival_df$table[i,"median"]
-
-      Nameing_vector_all <- c(paste(numbers_quantiles[,2], " - ", additional, ": ", numbers_quantiles[,1], "; n = ", numbers_quantiles[,3], "; t1/2 = ",     median_survival_df$table[,"median"], sep=""))
-      Nameing_vector <- c(paste(numbers_quantiles[,2], " Expression - ", additional, ": ", numbers_quantiles[,1], sep=""))
-
-      Nameing_vector_all <- Nameing_vector[numbers_quantiles$Freq!=0]
-      Nameing_vector <- Nameing_vector[numbers_quantiles$Freq!=0]
-
-      if(length(gene)>1){
-        label_mean <- ifelse(average=="mean","Mean","Median")
-        if(length(gene)>5){
-          length_gene_rounded <- floor(length(gene)/5)
-          gene_names <- c()
-          for(i in 1:length_gene_rounded){
-            start <- 1+((i-1)*5)
-            end <- i*5
-            gene_names <- paste(gene_names, paste(gene[start:end],collapse=" & "), "\n")
+    if(two_groups){
+      if(length(exist_in_exprs)>1){
+        if(gene_signature=="mean" | gene_signature=="median"){
+          df_matrix <- matrix(t(z[,exist_in_exprs]), ncol = length(exist_in_exprs), byrow=TRUE)
+          z$median <- Biobase::rowMedians(df_matrix)
+          z$mean <- rowMeans(df_matrix)
+          if(gene_signature=="mean"){
+            z$gene_signature <- ifelse(apply(z[,exist_in_exprs],1,mean) > value_combined,
+                                       "High Expression",
+                                       "Low Expression")
+          } else if(gene_signature=="median"){
+            z$gene_signature <- ifelse(apply(z[,exist_in_exprs],1,stats::median) > value_combined,
+                                       "High Expression",
+                                       "Low Expression")
           }
-          if(length(gene)%%5!=0){
-            end_length <- length_gene_rounded*5
-            gene_names <- paste(gene_names, paste(gene[end_length:length(gene)],collapse=" & "), "\n")
-          }
+          gene_signature_factor <- "gene_signature"
+        } else if(!missing(gene_signature)){
+          stop("Multiple genes can only be combined using \"median\" or \"mean\" as the parameter for `gene_signature`to use them as a gene expression signature. If you do not want a gene expression signature, leave the parameter out")
         } else {
-          gene_names <- paste(gene,collapse=" & ")
+          gene_signature_factor <- NULL
         }
-        gene_name <- paste(label_mean, "of", gene_names)
       } else {
-        gene_name <- gene[1]
+        if(!missing(gene_signature) & length(exist_in_exprs)==1){
+          warning("gene_signature: Gene expression signature cannot be calculated if only one gene there to be analyzed, parameter average will be ignored")
+        }
+        gene_signature_factor <- NULL
       }
-
-     } else {
-        median_survival <- survival::survfit(survival::Surv(time, event) ~ factor + additional, data = z2)
-        median_survival_df <- summary(median_survival)
-        #     median_survival_df$table[i,"median"]
-
-
-        numbers_quantiles <- data.frame(table(z$additional, z[,x]))
-        Nameing_vector_all <- c(paste(numbers_quantiles[,2], " - ", additional, ": ", numbers_quantiles[,1], "; n = ", numbers_quantiles[,3], "; t1/2 = ", median_survival_df$table[,"median"], sep=""))
-        Nameing_vector <- c(paste(numbers_quantiles[,2], "  - ", additional, ": ", numbers_quantiles[,1], sep=""))
-
-        Nameing_vector_all <- Nameing_vector[numbers_quantiles$Freq!=0]
-        Nameing_vector <- Nameing_vector[numbers_quantiles$Freq!=0]
-
-        gene_name <- x
+      for(i in 1:length(exist_in_exprs)){
+        z[,exist_in_exprs[i]] <- ifelse(z[,exist_in_exprs[i]] > value_single[i],
+                                        "High Expression",
+                                        "Low Expression")
       }
-
-    #survival function:
-    if(gene!=""){
-      fit <- survival::survfit(survival::Surv(time = time,
-                                              event = event) ~ gene + additional,
-                               data = z,
-                               type="kaplan-meier",
-                               conf.type="log")
     } else {
-      fit <- survival::survfit(survival::Surv(time = time,
-                                              event = event) ~ factor + additional,
-                               data = z2,
-                               type="kaplan-meier",
-                               conf.type="log")
-      z <- z2
+      if(length(exist_in_exprs)>1){
+        quantile_values <- apply(z[,exist_in_exprs],2,function(x) stats::quantile(x,c(.25, .50, .75)))
+        if(gene_signature=="mean" | gene_signature=="median"){
+          df_matrix <- matrix(t(z[,exist_in_exprs]), ncol = length(exist_in_exprs), byrow=TRUE)
+          z$median <- Biobase::rowMedians(df_matrix)
+          z$mean <- rowMeans(df_matrix)
+
+          z$gene_signature <- ifelse(z[,gene_signature] < mean(quantile_values[1,]), "Lower Quantile", ifelse(z[,gene_signature] < mean(quantile_values[3,]), "Intermediate", "Upper Quantile"))
+          gene_signature_factor <- "gene_signature"
+        } else {
+          gene_signature_factor <- NULL
+        }
+
+        for(i in 1:length(exist_in_exprs)){
+          z[,exist_in_exprs[i]] <- ifelse(z[,exist_in_exprs[i]] < quantile_values[1,i], "Lower Quantile", ifelse(z[,exist_in_exprs[i]] < quantile_values[3,i], "Intermediate", "Upper Quantile"))
+        }
+
+      } else {
+        gene_signature_factor <- NULL
+        quantile_values <- stats::quantile(z[,exist_in_exprs], c(.25, .50, .75))
+        z[,exist_in_exprs] <- ifelse(z[,exist_in_exprs] < quantile_values[1], "Lower Quantile", ifelse(z[,exist_in_exprs] < quantile_values[3], "Intermediate", "Upper Quantile"))
+      }
     }
-    if(return_df){
-      return(z)
-    }
-    p <- survminer::ggsurvplot(
-      fit,                     # survfit object with calculated statistics.
-      data=z,
-      title = plot_title,
-      surv.scale = c("percent"),
-      legend = legend_position,
-      legend.labs = Nameing_vector,
-      legend.title = gene_name,
-      # xlim = c(0,2000),        # present narrower X axis, but not affect survival estimates.
-      break.time.by = 500,     # break X axis in time intervals by 500.
-
-      pval = p.val,             # show p-value of log-rank test.
-      pval.method = TRUE,
-      #log.rank.weights = "n",
-      conf.int = F,         # show confidence intervals for point estimaes of survival curves.
-      xlab = xlabel,
-      ylab = ylabel,
-      risk.table = risk_table,       # show risk table.
-      risk.table.y.text.col = T, # colour risk table text annotations.
-      risk.table.y.text = F, # show bars instead of names in text annotations in legend of risk table
-
-      #ncensor.plot = TRUE
-      # cumevents=T
-      # cumcensor=T
-
-      surv.median.line="hv"
-      # tables.theme = theme_cleantable(),
-      # ggtheme = theme_bw() # Change ggplot2 theme
-    )
-    p <- p + ggplot2::guides(colour = ggplot2::guide_legend(nrow = legend_rows))
-    p
 
   } else {
-    if(p.val==TRUE){
-
-      # The second survdiff() argument, rho, designates the weights according to ^S(t)p
-      # and may be any numeric  value. The default is rho=0
-      # and corresponds to the log-rank test. The Peto& Peto modi cation of the Gehan-Wilcoxon test
-      # is computed using rho=1
-      if(gene!=""){
-        p_value_survdiff <- survival::survdiff(survival::Surv(time, event) ~ gene, data = z, rho=1)
-        p.value = 1 - stats::pchisq(p_value_survdiff$chisq, length(p_value_survdiff$n) - 1)
-      } else {
-        p_value_survdiff <- survival::survdiff(survival::Surv(time, event) ~ factor, data = z2, rho=1)
-        p.value = 1 - stats::pchisq(p_value_survdiff$chisq, length(p_value_survdiff$n) - 1)
-      }
-
+    gene_signature_factor <- NULL
+    if(optimal){
+      warning("Optimal: Optimal cutpoint cannot be calculated for clinical data or mutation data, parameter optimal will be ignored")
     }
-
-    # t 1/2
-    if(gene!=""){
-      median_survival <- survival::survfit(survival::Surv(time, event) ~ gene, data = z)
-      median_survival_df <- summary(median_survival)
-      #     median_survival_df$table[i,"median"]
-
-      z$gene <- as.factor(z$gene)
-      gene_levels <- nlevels(z$gene)
-      Nameing_vector <- c()
-      for(i in 1:gene_levels) {
-        Nameing_vector <- c(Nameing_vector, paste(levels(z$gene)[i], "; n = ", nrow(z[z$gene==levels(z$gene)[i], ]), sep=""))
-      }
-
-      if(length(gene)>1){
-        label_mean <- ifelse(average == "mean","Mean","Median")
-        if(length(gene)>5){
-          length_gene_rounded <- floor(length(gene)/5)
-          gene_names <- c()
-          for(i in 1:length_gene_rounded){
-            start <- 1+((i-1)*5)
-            end <- i*5
-            gene_names <- paste(gene_names, paste(gene[start:end],collapse=" & "), "\n")
-          }
-          if(length(gene)%%5!=0){
-            end_length <- length_gene_rounded*5
-            gene_names <- paste(gene_names, paste(gene[end_length:length(gene)],collapse=" & "), "\n")
-          }
-        } else {
-          gene_names <- paste(gene,collapse=" & ")
-        }
-        gene_name <- paste(label_mean, "of", gene_names)
-      } else {
-        gene_name <- gene[1]
-      }
-    } else {
-      median_survival <- survival::survfit(survival::Surv(time, event) ~ factor, data = z2)
-      median_survival_df <- summary(median_survival)
-      #     median_survival_df$table[i,"median"]
-
-      gene_levels <- nlevels(z[,x])
-      Nameing_vector <- c()
-      for(i in 1:gene_levels) {
-        Nameing_vector <- c(Nameing_vector, paste(levels(z[,x])[i], "; n = ", nrow(z[z[,x]==levels(z[,x])[i], ]), sep=""))
-      }
-      gene_name <- x
+    if(!missing(value)){
+      warning("Value: Clinical and mutational data cannot be divided into groups by a user defined gene expression value, parameter value and optimal will be ignored")
     }
-
-    # Get p value for the difference of the gene and plot them on the graph
-
-    if(gene!=""){
-      fit <- survival::survfit(survival::Surv(time = time,
-                                              event = event) ~ gene,
-                               data = z,
-                               type="kaplan-meier",
-                               conf.type="log")
-    } else {
-      fit <- survival::survfit(survival::Surv(time = time,
-                                              event = event) ~ factor,
-                               data = z2,
-                               type="kaplan-meier",
-                               conf.type="log")
-      z <- z2
+    if(!missing(gene_signature)){
+      warning("gene_signature: A gene expression signature cannot be calculated if no genes are there to be analyzed, parameter signature will be ignored")
     }
-    if(return_df){
-      return(z)
-    }
-    p <- survminer::ggsurvplot(
-      fit,                     # survfit object with calculated statistics.
-      data=z,
-      surv.scale = c("percent"),
-      legend = legend_position,
-      title = plot_title,
-      legend.labs = Nameing_vector,
-      legend.title = gene_name,
-      # xlim = c(0,2000),        # present narrower X axis, but not affect survival estimates.
-      break.time.by = 500,     # break X axis in time intervals by 500.
-
-      pval = p.val,             # show p-value of log-rank test.
-      pval.method = TRUE,
-      #log.rank.weights = "n",
-      conf.int = F,         # show confidence intervals for point estimaes of survival curves.
-      xlab = xlabel,
-      ylab = ylabel,
-      risk.table = risk_table,       # show risk table.
-      risk.table.y.text.col = T, # colour risk table text annotations.
-      risk.table.y.text = F, # show bars instead of names in text annotations in legend of risk table
-
-      #ncensor.plot = TRUE
-      # cumevents=T
-      # cumcensor=T
-
-      surv.median.line="hv"
-      # tables.theme = theme_cleantable(),
-      # ggtheme = theme_bw() # Change ggplot2 theme
-    )
-    p <- p + ggplot2::guides(colour = ggplot2::guide_legend(nrow = legend_rows))
-    p
   }
 
+  if(factor_list){
+    if(length(colnames(z))>3){
+      return_factor_list <- sapply(z[,c(exist_in_exprs,exist_in_pData,exist_in_mutation,gene_signature_factor,grouping_factors)],function (x) levels(as.factor(x)))
+    } else {
+      return_factor_list <- paste(colnames(z)[3],": ", paste(levels(factor(z[,3])),collapse = ", "), sep="")
+    }
+    if(return_df){
+      warning("return_df: Please use \"factor_list = FALSE\" to return the data frame")
+    }
+    if(return_fit){
+      warning("return_fit: Please use \"factor_list = FALSE\" to return the fit")
+    }
+    return(return_factor_list)
+  }
+
+  # Factorize
+  if(length(c(exist_in_exprs,exist_in_pData,exist_in_mutation,gene_signature_factor,grouping_factors))>1){
+    z[c(exist_in_exprs,exist_in_pData,exist_in_mutation,gene_signature_factor,grouping_factors)] <- lapply(z[,c(exist_in_exprs,exist_in_pData,exist_in_mutation,gene_signature_factor,grouping_factors)],as.factor)
+  } else if(length(gene_signature_factor)!=0){
+    z[,3] <- as.factor(z[,3])
+  }
+
+  if(return_df){
+    return(z)
+  }
+
+  if(length(exist_in_pData)!=0 & show_only!="expression data" & show_only!="mutation data"){
+    pData_formula <- paste(paste("`", exist_in_pData, "`", sep=""),collapse = " + ")
+  } else {
+    pData_formula <- NULL
+  }
+
+  if(length(exist_in_exprs)!=0 & show_only!="clinical" & show_only!="mutation data") {
+    exprs_formula <- paste(paste("`", exist_in_exprs, "`", sep=""),collapse = " + ")
+  #  if(length(exist_in_pData!=0)){
+  #    exprs_formula <- paste("+",exprs_formula)
+  #  }
+  } else {
+    exprs_formula <- NULL
+  }
+
+  if(length(exist_in_mutation)!=0 & show_only!="clinical" & show_only!="expression data" ){
+    mutation_formula <- paste(paste("`", exist_in_mutation, "`", sep=""),collapse = " + ")
+  #  if(length(exist_in_exprs!=0)){
+  #    mutation_formula <- paste("+",mutation_formula)
+  #  }
+  } else {
+    mutation_formula <- NULL
+  }
+
+  # Calculate survfit
+
+  if(length(gene_signature_factor)>0 & length(exist_in_exprs)>1){
+    if(groupings[1]!=FALSE){
+      formula <- "groupings + gene_signature"
+    } else {
+      formula <- paste(c(pData_formula,mutation_formula,"gene_signature"),collapse = " + ")
+    }
+
+  } else {
+    if(groupings[1]!=FALSE){
+      formula <- paste(c("groupings",exprs_formula),collapse=" + ")
+    } else {
+      formula <- paste(c(pData_formula,mutation_formula,exprs_formula),collapse=" + ")
+    }
+  }
+
+  # p-value:
+  if(length(colnames(z))==3){
+    z[,3] <- factor(z[,3])
+  } else {
+    z[,3:length(colnames(z))] <- lapply(z[,3:length(colnames(z))],factor)
+  }
+
+  count_exps <- nlevels(z[,exist_in_exprs])/length(exist_in_exprs)
+  count_mut <- nlevels(z[,exist_in_mutation])*length(exist_in_mutation)
+  count_clin <- nlevels(z[,exist_in_pData])*length(exist_in_pData)
+
+  if(count_exps==0) count_exps=1
+  if(count_mut==0) count_mut=1
+  if(count_clin==0) count_clin=1
+
+  if((count_exps*count_mut*count_clin)<3){
+    if(p.val == TRUE){
+      p.val = TRUE
+    } else {
+      p.val = FALSE
+    }
+  } else {
+    p.val = FALSE
+  }
+
+   Survobject <- stats::as.formula(paste("Surv(time = time, event = event) ~", formula))
+
+  fit <- do.call(survival::survfit,
+                 list(formula = Survobject,
+                      data = z,
+                      type="kaplan-meier",
+                      conf.type="log"
+                      )
+                 )
+
+
+  if(return_fit){
+    cox <- do.call(survival::coxph,
+                   list(formula = Survobject,
+                        data = z)
+    )
+
+    sdf <- do.call(survival::survdiff,
+                   list(formula = Survobject,
+                        data = z)
+    )
+    p.val <- 1 - stats::pchisq(sdf$chisq, length(sdf$n) - 1)
+
+    quantile_survival <- quantile(fit, probs = c(0.05,0.25,0.5,0.75,0.95))
+
+    return(list(fit,cox,paste("P-Value =",p.val),quantile_survival))
+  }
+
+  # Calculate scaling of X-Axis
+  if(max(z$time,na.rm=TRUE)>500){
+    breaks <- 500
+  } else {
+    breaks <- 50
+  }
+
+  #  if(length(colnames(z))>3){
+  #    naming_factors <- sapply(z[,c(exist_in_exprs,exist_in_pData,exist_in_mutation,combined_factor)],function (x) levels(as.factor(x)))
+  #  } else {
+  #    naming_factors <- levels(factor(z[,3]))
+  #  }
+
+  if(length(gene_signature_factor)!=0){
+    expression_title <- paste("gene signature of",paste(exist_in_exprs,collapse=" & "))
+  } else {
+    expression_title <- exist_in_exprs
+  }
+  legend_title <- paste(c(expression_title,exist_in_pData,exist_in_mutation),collapse=" & ")
+
+  p <- survminer::ggsurvplot(fit,
+                             data=z,
+                             title = plot_title,
+                             surv.scale = c("percent"),
+                             #palette = "RdBu",
+                             #xscale = "d_y",
+                             legend = legend_position,
+                             #legend.labs = naming_factors,
+                             legend.title = legend_title,
+                             # xlim = c(0,2000),        # present narrower X axis, but not affect survival estimates.
+                             break.time.by = breaks,     # break X axis in time intervals by 500.
+
+                             pval = p.val,             # show p-value of log-rank test.
+                             pval.method = TRUE,
+                             log.rank.weights = "n",
+                             conf.int = F,         # show confidence intervals for point estimaes of survival curves.
+                             xlab = xlabel,
+                             ylab = ylabel,
+                             risk.table = risk_table,       # show risk table.
+                             #  risk.table.y.text.col = T, # colour risk table text annotations.
+                             #  risk.table.y.text = F, # show bars instead of names in text annotations in legend of risk table
+
+                             #ncensor.plot = TRUE
+                             #cumevents=T
+                             #cumcensor=T
+                             # tables.theme = theme_cleantable(),
+                             # ggtheme = theme_bw() # Change ggplot2 theme
+
+                             surv.median.line="hv",
+                             ...
+
+  )
+  p <- p + ggplot2::guides(colour = ggplot2::guide_legend(nrow = legend_rows))
+  p
 }

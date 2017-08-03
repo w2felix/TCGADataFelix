@@ -9,6 +9,7 @@
 #' @param ylabel manually define the y-axis label
 #' @param logrisk don't exactly know... need to check
 #' @param average values: `mean` or `median`, defines how >1 genes are averaged
+#' @param survival "overall", "DFS"
 #' @param ... additional variables that can be added
 #'
 #' @return Plots the log Hazard ratio in correlation to its relative gene expression level using ggplot2
@@ -23,18 +24,30 @@
 #'
 smoothCoxph_man <- function (x, Eset, exclude_values,
                                xlimit, ylimit, xlabel, ylabel,
-                               logrisk = TRUE, average = "median", ...) {
+                               logrisk = TRUE, survival="overall", average = "median", ...) {
 
-  time <- Biobase::pData(Eset)$X_OS
-  event <- Biobase::pData(Eset)$X_OS_IND
-  gene <- x
+  if(survival=="overall") {
+    time <- Biobase::pData(Eset)$X_OS
+    event <- Biobase::pData(Eset)$X_OS_IND
+  } else if(survival=="DFS"){
+    time <- Biobase::pData(Eset)$DFS_MONTH
+    event <- Biobase::pData(Eset)$DFS_STATUS
+    event <- ifelse(event=="Recurred/Progressed",1,0)
+  } else {
+    stop(paste("You cannot use \"", survival, "\" as censoring"), sep="")
+  }
+  # x="Age"
+  if(x=="Age"){
+    gene <- "Age"
+  } else {
+    gene <- x
+  }
+
 
   # for package reasons: Define variables first:
   hazard_ratio <- NULL
   upper95 <- NULL
   lower95 <- NULL
-
-
 
   if(length(gene)>1){
     z <- data.frame(time = time, event = event)
@@ -54,15 +67,22 @@ smoothCoxph_man <- function (x, Eset, exclude_values,
     z$Mean <- base::rowMeans(df_matrix)
 
   } else {
-    x <- Biobase::exprs(Eset)[gene[1],]
-    z <- data.frame(time = time, event = event, x = x)
+    if(x=="Age"){
+      q <- as.numeric(Biobase::pData(Eset)$AGE)
+    } else {
+      q <- Biobase::exprs(Eset)[gene[1],]
+    }
 
-    # z-score the data
-    for(i in 3:length(z)){
-      Z_score_1 <- z[,i] - mean(z[,i])
-      Z_score <- Z_score_1 / stats::sd(z[,i])
-      z[,i] <- Z_score
-      x <- Z_score
+    z <- data.frame(time = time, event = event, q = q)
+
+    if(x!="Age"){
+      # z-score the data
+      for(i in 3:length(z)){
+        Z_score_1 <- z[,i] - mean(z[,i])
+        Z_score <- Z_score_1 / stats::sd(z[,i])
+        z[,i] <- Z_score
+        q <- Z_score
+      }
     }
   }
 
@@ -95,9 +115,9 @@ smoothCoxph_man <- function (x, Eset, exclude_values,
       coxph1 <- survival::coxph(survival::Surv(time, event) ~ survival::pspline(Median, df = 4), data = z)
     }
   } else {
-    z <- z[!is.na(z$x), ]
-    z <- z[order(z$x), ]
-    coxph1 <- survival::coxph(survival::Surv(time, event) ~ survival::pspline(x, df = 4), data = z)
+    z <- z[!is.na(z$q), ]
+    z <- z[order(z$q), ]
+    coxph1 <- survival::coxph(survival::Surv(time, event) ~ survival::pspline(q, df = 4), data = z)
   }
 
   if (logrisk) {
@@ -117,11 +137,17 @@ smoothCoxph_man <- function (x, Eset, exclude_values,
         xlimit <- range(z$Median)
       }
     } else {
-      xlimit <- range(x)
+      xlimit <- range(q)
     }
   }
   if (missing(ylimit)) ylimit <- c(min(y[, 1], stats::median(y[, 2]), na.rm = T), max(y[, 1], stats::median(y[, 3]), na.rm = T)) * 1.5
-  if (missing(xlabel)) xlabel <- "Relative gene expression level"
+  if (missing(xlabel)) {
+    if(x=="Age"){
+      xlabel <- "Age"
+    } else {
+      xlabel <- "Relative gene expression level"
+    }
+  }
   if (missing(ylabel)) ylabel <- "log Hazard Ratio"
 
   if(length(gene)>1){
@@ -140,8 +166,8 @@ smoothCoxph_man <- function (x, Eset, exclude_values,
     }
 
   } else {
-    coxph2 <- survival::coxph(survival::Surv(time, event) ~ x, data = z)
-    data_smooth <- data.frame(expression = z$x[1:length(pred$fit)],
+    coxph2 <- survival::coxph(survival::Surv(time, event) ~ q, data = z)
+    data_smooth <- data.frame(expression = z$q[1:length(pred$fit)],
                               hazard_ratio = y[, 1],
                               lower95 = y[, 2],
                               upper95 = y[, 3])
@@ -170,7 +196,10 @@ smoothCoxph_man <- function (x, Eset, exclude_values,
     gene_name <- gene[1]
   }
 
-  Plot_Title <- paste("Correlation of", gene_name, "expression levels\nto log hazard ratio")
+  Plot_Title <- paste("Correlation of ", gene_name,
+                      if(x!="Age") {
+                        " expression levels\n"
+                      }," to log hazard ratio",sep="")
 
   ggplot2::ggplot(data_smooth, ggplot2::aes(x = expression)) +
     ggplot2::ggtitle(Plot_Title) +

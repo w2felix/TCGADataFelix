@@ -3,6 +3,8 @@
 #' @param clinical_file PATH of the clinical data from TCGA, e.g.: "../../../Projects/TCGA-Elisa/Clinical/LAML.clin.merged.txt"
 #' @param expression_file PATH of the expression data from TCGA, e.g.: "../../../Projects/TCGA-Elisa/RNA/LAML.rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.data.txt"
 #' @param source Define the source of the data. "cBio" and "cBio_z_score" for cBioportal Data, "firehose" for Firehose data.
+#' @param skip Please Check in the clinical file in which row the header column appears. The amount of rows skiped should be entered as e.g. skip = 5.
+#'
 #' @importFrom dplyr %>%
 #' @return ExpressionSet
 #' @export
@@ -23,6 +25,10 @@ build_TCGA_Eset <- function (clinical_file,
 #expression_file <- "../../../Projects/TCGA-Elisa/tcga_KIRC_cBio/data_RNA_Seq_v2_mRNA_median_Zscores.txt"
 
   #expression_file <- "../../../Projects/TCGA-Elisa/tcga_KIRC_cBio/data_RNA_Seq_v2_expression_median.txt"
+
+  #### MISSING: CHECK IF USER DOES EVERYTHING RIGHT!
+
+
 
 if(source=="firehose") {
 
@@ -87,6 +93,13 @@ if(source=="firehose") {
   expression_removed_vm  <- vm(expression_tumor)
 
 } else if(source=="cBio") {
+
+
+  ## error here!
+  if(grepl("Zscores",expression_file)){
+    warning("It may be that your selected expression file is the Zscore normalized file from cBioportal.\nYou might want to change the source to:\nsource = \"cBio_z_score\"")
+  }
+  ####
 
   # Importing the clinical Data
   clinical <- as.data.frame(readr::read_delim(clinical_file,

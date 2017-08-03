@@ -4,67 +4,75 @@
 \alias{Survival_adaptable}
 \title{Create a Kaplan Meier Estimator by using a TCGA Dataset}
 \usage{
-Survival_adaptable(x, Eset, value = 0, additional, mutation, exclude,
-  p.val = FALSE, xlabel, ylabel, logrisk = TRUE, legend_position,
-  legend_rows = 1, average = "mean", optimal = FALSE,
-  plot_cutpoint = FALSE, risk_table = TRUE, plot_title = "",
-  survival = "overall", return_df = FALSE, ...)
+Survival_adaptable(Eset, survival = "overall", clinical, mutation, expression,
+  optimal = FALSE, value, gene_signature, groupings = FALSE, exclude,
+  show_only = FALSE, p.val = FALSE, logrisk = TRUE, xlabel, ylabel,
+  plot_title = "", legend_position, legend_rows = 1,
+  plot_cutpoint = FALSE, risk_table = TRUE, return_df = FALSE,
+  return_fit = FALSE, factor_list = FALSE, ...)
 }
 \arguments{
-\item{x}{a character vector with 1 or more gene names or a column of the clinical patient data}
-
 \item{Eset}{An Expression Set}
+
+\item{survival}{For overall survival = "overall", for disease free survival: survival = "DFS"}
+
+\item{clinical}{a character vector with one or more factors of the clinical patient data}
+
+\item{mutation}{a character vector with one or more factors of the patients mutation data added to the ExpressionSet by add_mutation()}
+
+\item{expression}{a character vector with one or more gene expression data}
+
+\item{optimal}{calculate the optimal cutpoint using the max_stat ranking method, will overide the value value}
 
 \item{value}{Defines the value to subdivide the gene expression groups.
 Numeric: Devided into two groups
 "q": 25 \% quantile, 25-75 \% quantile and 75 \% quantile}
 
-\item{additional}{Additional covariate to subset groups}
+\item{gene_signature}{For more than one gene, how the genes for the signature are averaged, either "median" or "mean". If left out, all gene expression combinations will be plotted individually}
 
-\item{mutation}{Vector of mutations, that were added using the add_mutation() function}
+\item{groupings}{You can group factors from the clinical data}
 
-\item{exclude}{Factors to exclude, when no gene is entered but another factor from the clinical patient data, it can also be excluded, the order of the to be exlcuded variables does not matter.}
+\item{exclude}{Factors to exclude from any of the given clinical, expression or mutation data. The order of the to be exlcuded variables does not matter.}
 
-\item{p.val}{display the p-Value on the graph}
+\item{show_only}{Works only if exclude is used. If you want to exclude specific values but only show the regression for either "gene expression", "clinical" data or "mutation data"}
+
+\item{p.val}{Displays the p-Value on the graph, only possible if a single factor is analyzed}
+
+\item{logrisk}{Displays how the p-value was calculated}
 
 \item{xlabel}{User defined x-axis label}
 
 \item{ylabel}{User defined y-axis label}
 
-\item{logrisk}{logrisk?!}
+\item{plot_title}{Title of the Plot, if not stated, no title will be shown}
 
-\item{legend_position}{where should the legend be? doesn't work with theme_bw}
+\item{legend_position}{Where should the legend be? doesn't work with theme_bw}
 
 \item{legend_rows}{How many rows are used for the legend}
-
-\item{average}{for more than one gene, how the value of the averaged z-score is calculated, either median or mean}
-
-\item{optimal}{calculate the optimal cutpoint, will overide the value value when numeric, does not work when value = "q"}
 
 \item{plot_cutpoint}{Plot the graph how the optimal cutpoint was calculated, normal survival plot will be REPLACED by surv_cutpoint: Determine the optimal cutpoint for each variable using ’maxstat’}
 
 \item{risk_table}{If the risk table is shown or not, use FALSE or TRUE}
 
-\item{plot_title}{Title of the Plot, if not stated, no title will be shown}
-
-\item{survival}{For overall survival = "overall", for disease free survival: survival = "DFS"}
-
 \item{return_df}{Returns the Dataframe that is used for calculatinf the Cox Regression}
 
-\item{...}{additional variables that can be added}
+\item{return_fit}{Returns the fit of the Regression. [[1]] = Fit, [[2]] = p-value, [[3]] = Coxph}
+
+\item{factor_list}{Returns the list of factors that are in the dataframe. These factors can be used e.g. for exclusen.}
+
+\item{...}{Additional variables that can be passed over to the ggsurvplot function of the survminer package}
 }
 \value{
-A survival Estimator
+The modified survival Estimator from the survminer package to be able to handle TCGA Data
 }
 \description{
 \code{survival_adaptable()} plots a highly modifyable survival estimator using the survminer package as a basis
 }
 \examples{
 \dontrun{
-Survival_adaptable(x = c("FOXA2"), Eset = Eset,
-value = 0, additional = "pathologic_stage",
-exclude = c("Stage IV"), p.val=TRUE,
+Survival_adaptable(expression = c("FOXA2"), Eset = Eset,
+optimal = TRUE, p.val=TRUE,
 xlabel="Days", legend_position = "top", average = "median",
-optimal=T, plot_cutpoint=F,risk_table=TRUE)
+plot_cutpoint=F,risk_table=TRUE)
 }
 }

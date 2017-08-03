@@ -167,107 +167,112 @@ gene <- "FOXD1"
 ```
 
 ## Do a survival analysis using **Survival_adaptable()** 
-```{r, fig.width=8,fig.height=9}
-Survival_adaptable(x = c(gene), 
+```{r, fig.width=10,fig.height=10}
+Survival_adaptable(expression = c(gene), 
                    Eset = mutset,
                    mutation = mutations,
-                   p.val=F,
                    xlabel="Days",
                    legend_position = "bottom",
                    legend_rows = 4,
                    average = "median",
-                   optimal=F,
+                   optimal=T,
                    plot_cutpoint=F,
                    plot_title = paste("Kaplan Meier Estimator of", gene, "Expression and", paste(mutations, collapse = " & "), "\nstatus in ccRCC (KIRC, TCGA)")
                    )
 ```
 
+## How to continue
+
 We can analyze now various different things, e.g. expression of different genes or categories from the clinical data table, such as treatment schemes etc.
 
-### Examples for *x* and *additional*:
+### Examples for *clinical* and *expression* and *mutation*:
 
 Variable  | input
 ----------| ---------
-x         | one gene using `"gene"`
-x         | multiple genes using `c("gene1","gene2","gene3",...)`
-x         | a factor from the clinical dataset, e.g.: `"patient.neoplasm_histologic_grade"`
-additional  | a factor from the clinical dataset, e.g.: `"patient.neoplasm_histologic_grade"`
-additional  | multiple factors from the clinical dataset, e.g. `c("grade","AGE")`
-additional  | factorized mutations using: `paste(mutation,"status")`
-
-**The use of mutations and additional is not supported so far**
-
-The best to do this for now is to subset the ExpressionSet first by using
-
-```{r}
-subset_eset <- mutset[,!mutset$AJCC_PATHOLOGIC_TUMOR_STAGE %in% "Stage IV"]
-```
+gene         | one gene using `"gene"`
+gene         | multiple genes using `c("gene1","gene2","gene3",...)`
+clinical     | a factor from the clinical dataset, e.g.: `"GRADE"`
+clinical    | multiple factors from the clinical dataset, e.g.: `c("GRADE","AGE")`
+mutation    | mutations added to the dataset by add_mutation(), e.g. `c("TP53", "VHL")`
 
 ### Examples for *exclude*
 
-You can exclude single factors from either *x* or *additional* by using the parameter `exclude = "exclude1"` or multiple factors using `exclude = c("exlude1","exclude2")`
+You can exclude single factors from *clinical* by using the parameter `exclude = "exclude1"` or multiple factors using `exclude = c("exlude1","exclude2")`
 
 e.g.: 
 
-> additional = "GRADE"  
+> clinical = "GRADE"  
 exclude = c("G1","GX")
 
 This would exclude the histologic grades g1 and gx from additional
 
-> x = c("GRADE")  
-additional = "age"  
+> clinical = c("GRADE","AGE")  
 exclude = c("G1","GX", "old")
 
-This would exclude histological grades G1 and GX from x and old from the additional age factor.  
-**x has to have at least two factors remaining for survival analysis**
+This would exclude histological grades G1 and GX and old from the clinical data. 
+
+**The data has to have at least two factors remaining for survival analysis**
 
 Example 1:
-```{r, fig.width=8,fig.height=9}
-Survival_adaptable(x = c("GRADE"), Eset = mutset,
-                   p.val=F,
+```{r, fig.width=10,fig.height=10}
+Survival_adaptable(clinical = c("GRADE","GENDER"), Eset = mutset,
                    xlabel="Days",
                    legend_position = "right",
                    legend_rows = 4,
-                   average = "median",
-                   optimal=T,
-                   plot_cutpoint=F,
-                   additional = "GENDER",
                    exclude=c("[Not Available]","GX","G1","MALE"),
                   plot_title = paste("Kaplan Meier Estimator of histologic grade and patient gender \nin ccRCC (KIRC, TCGA)")
 )
 ```
 
 Example 2:
-```{r, fig.width=8,fig.height=6}
-Survival_adaptable(x = c("GRADE"), Eset = mutset,
-                   p.val=F,
+```{r, fig.width=10,fig.height=10}
+Survival_adaptable(clinical = c("GRADE"), Eset = mutset,
                    xlabel="Days",
-                   legend_position = "right",
+                   legend_position = "bottom",
                    legend_rows = 4,
-                   average = "median",
-                   optimal=T,
-                   plot_cutpoint=F,
                    mutation = mutations,
                    exclude=c("G1","GX","G2", "[Not Available]"),
                    plot_title = paste("Kaplan Meier Estimator of all high grade tumors with ", paste(mutations, collapse = " & "), "\nstatus in ccRCC (KIRC, TCGA)")
                    )
 ```
 
+### Possible Factors
+
+The dataframe that was used to calculate the Cox Regression can be returned by using the parameter `return_fit = T` 
+
+```{r, fig.width=8,fig.height=9}
+factor_list <- Survival_adaptable(expression = c(gene), 
+                   Eset = mutset,
+                   mutation = mutations,
+                   clinical = "GRADE",
+                   average = "median",
+                   optimal=T,
+                   factor_list = T
+                   )
+factor_list
+```
+
+### Subsetting the ExpressionSet
+
+It can seem quite complicated to use all the different exclude and show_only etc. Therefore you can also subset the ExpressionSet first by using
+
+```{r}
+subset_eset <- mutset[,!mutset$AJCC_PATHOLOGIC_TUMOR_STAGE %in% "Stage IV"]
+```
+
 ##Add additional categories, e.g. age:
 ```{r}
-pData(mutset)[,"Age category"] <- ifelse(pData(mutset)$AGE > 65,"old","young")
+pData(mutset)[,"Age_category"] <- ifelse(pData(mutset)$AGE > 65,"old","young")
 ```
 
 Example:
-```{r, fig.width=8,fig.height=6}
-Survival_adaptable(x = c("Age category"), Eset = mutset,
+```{r, fig.width=10,fig.height=10}
+Survival_adaptable(clinical = c("Age_category"), 
+                   Eset = mutset,
                    p.val=TRUE,
                    xlabel="Days",
-                   legend_position = "right",
+                   legend_position = "bottom",
                    legend_rows = 4,
-                   average = "median",
-                   optimal=T,
-                   plot_cutpoint=F,
                    mutation = mutations
                    )
 ```
@@ -288,14 +293,13 @@ The legend can be put in two or more rows using the `legend_rows` parameter.
 ```{r, fig.width=8,fig.height=6}
 library(ggpubr)
 
-p <- Survival_adaptable(x = c("Age category"), Eset = mutset,
+p <- Survival_adaptable(clinical = c("Age_category"), 
+                        Eset = mutset,
                    p.val=FALSE,
                    xlabel="Days",
                    legend_position = "bottom",
                    legend_rows = 3,
-                   average = "median",
-                   optimal=T,
-                   plot_cutpoint=F,
+                   average = "median",,
                    mutation = mutations,
                    risk_table = FALSE,
                    plot_title = "A dummy Title"
@@ -324,20 +328,37 @@ p
 The dataframe that was used to calculate the Cox Regression can be returned by using the parameter `return_df = T` 
 
 ```{r, fig.width=8,fig.height=9}
-survival_df <- Survival_adaptable(x = c(gene), 
+survival_df <- Survival_adaptable(expression = c(gene), 
                    Eset = mutset,
                    mutation = mutations,
-                   p.val=F,
-                   legend_position = "bottom",
-                   legend_rows = 4,
                    average = "median",
-                   optimal=F,
-                   plot_cutpoint=F,
+                   optimal=T,
                    return_df = T
                    )
 head(survival_df)
 ```
+## Return Cox Regression Fit
 
+The dataframe that was used to calculate the Cox Regression can be returned by using the parameter `return_fit = T`.
+
+It is stored in a list:
+
+* [[1]] = Fit
+* [[2]] = coxph
+* [[3]] = p.value by survdiff()
+* [[4]] = survival quantiles (5%, 25%, 50%, 75%, 95%)
+
+```{r}
+survival_fit <- Survival_adaptable(expression = c(gene), 
+                   Eset = mutset,
+                   mutation = mutations,
+                   average = "median",
+                   optimal=T,
+                   return_fit = T
+                   )
+
+survival_fit[[1]]$strata
+```
 
 # Plot the log hazard ration using **smoothCoxph_man**
 ```{r, fig.width=6,fig.height=4}
@@ -363,29 +384,30 @@ hazard_list(x = c("FOXA2","FOXD1","TSPAN8","ICAM1"),
 To exclude data: Subset the ExpressionSet if anything should be excluded from analysis
 
 ```{r}
-
-Multivariateanalysis <- Multivariate(x = c("FOXA2"), 
-             Eset = mutset,
-             factor = c("ETHNICITY","VHL","PBRM1"),
+x = c("FOXA2","EEF1A2","SPDEF","GENDER")
+Multivariate(x = x,
+             Eset = Eset,
              factor_list= F,
-             average = "median",
-             optimal=T, 
+             average = "mean",
+             optimal=T,
              plot_cutpoint=F,
              return_df=F,
              coef=T,
-             survival="overall"
-             )
-
-Multivariateanalysis
+             survival="overall",
+             combined=F
+)
 
 # Return List of Factors used for the analysis:
-Multivariate(x = c("FOXA2"), 
-             Eset = mutset,
-             factor = c("ETHNICITY","VHL","PBRM1"),
-             factor_list= T,
-             #exclude = c("LATINO"), 
-             average = "median",
-             survival="overall"
+Multivariate(x = x, 
+             Eset = Eset,
+             factor_list= T, 
+             average = "mean",
+             optimal=T,
+             plot_cutpoint=F,
+             return_df=F,
+             coef=T,
+             survival="overall",
+             combined=F
              )
 
 

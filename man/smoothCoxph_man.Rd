@@ -5,7 +5,7 @@
 \title{Create a correlation of gene expression to log hazard ratio}
 \usage{
 smoothCoxph_man(x, Eset, exclude_values, xlimit, ylimit, xlabel, ylabel,
-  logrisk = TRUE, average = "median", ...)
+  logrisk = TRUE, survival = "overall", average = "median", ...)
 }
 \arguments{
 \item{x}{1 or multiple Genes, as a character vector list, to analyze}
@@ -23,6 +23,8 @@ smoothCoxph_man(x, Eset, exclude_values, xlimit, ylimit, xlabel, ylabel,
 \item{ylabel}{manually define the y-axis label}
 
 \item{logrisk}{don't exactly know... need to check}
+
+\item{survival}{"overall", "DFS"}
 
 \item{average}{values: `mean` or `median`, defines how >1 genes are averaged}
 
