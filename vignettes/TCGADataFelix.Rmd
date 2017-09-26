@@ -215,13 +215,15 @@ This would exclude histological grades G1 and GX and old from the clinical data.
 
 Example 1:
 ```{r, fig.width=10,fig.height=10}
-Survival_adaptable(clinical = c("GRADE","GENDER"), Eset = mutset,
+Survival_adaptable(clinical = c("GRADE","GENDER"), 
+                   Eset = mutset,
                    xlabel="Days",
                    legend_position = "right",
                    legend_rows = 4,
                    exclude=c("[Not Available]","GX","G1","MALE"),
                   plot_title = paste("Kaplan Meier Estimator of histologic grade and patient gender \nin ccRCC (KIRC, TCGA)")
 )
+
 ```
 
 Example 2:

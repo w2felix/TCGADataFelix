@@ -4,12 +4,13 @@
 \alias{Survival_adaptable}
 \title{Create a Kaplan Meier Estimator by using a TCGA Dataset}
 \usage{
-Survival_adaptable(Eset, survival = "overall", clinical, mutation, expression,
-  optimal = FALSE, value, gene_signature, groupings = FALSE, exclude,
-  show_only = FALSE, p.val = FALSE, logrisk = TRUE, xlabel, ylabel,
-  plot_title = "", legend_position, legend_rows = 1,
-  plot_cutpoint = FALSE, risk_table = TRUE, return_df = FALSE,
-  return_fit = FALSE, factor_list = FALSE, ...)
+Survival_adaptable(Eset, survival = "overall", clinical = FALSE,
+  mutation = FALSE, expression = FALSE, optimal = FALSE, value,
+  gene_signature, groupings = FALSE, exclude, show_only = FALSE,
+  p.val = FALSE, logrisk = TRUE, xlabel, ylabel, plot_title = "",
+  legend_position, legend_rows = 1, plot_cutpoint = FALSE,
+  risk_table = TRUE, return_df = FALSE, return_fit = FALSE,
+  factor_list = FALSE, ...)
 }
 \arguments{
 \item{Eset}{An Expression Set}

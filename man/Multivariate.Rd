@@ -6,7 +6,8 @@
 \usage{
 Multivariate(x, Eset, value = 0, factor_list = F, mutation,
   average = "mean", optimal = FALSE, survival = "overall",
-  return_df = FALSE, plot_cutpoint = F, coef = F, combined = T, ...)
+  return_df = FALSE, plot_cutpoint = F, coef = F, combined = F,
+  stepwise = F, ...)
 }
 \arguments{
 \item{x}{A character vector with 1 or more gene names and/or columns of the clinical patient data}
@@ -33,6 +34,10 @@ Numeric: Devided into two groups (for more genes use value = c(cutpoint gene 1, 
 
 \item{coef}{Return the coefficients of the multivariate analysis instead of the multivariate object}
 
+\item{combined}{includes a comination of the different genes into the analysis. still in development}
+
+\item{stepwise}{Do a stepwise chosing a model by AIC to get rid of variables that don't play a role in the linear model}
+
 \item{...}{additional variables that can be added}
 }
 \value{
@@ -43,9 +48,8 @@ TCGA Multivariate Analysis
 }
 \examples{
 \dontrun{
-Multivariate(x = c("FOXA2"), Eset = Eset,
-value = 0, extrafactor = "ETHNICITY",
-exclude = c("LATINO"), average = "median",
+Multivariate(x = c("FOXA2", "GENDER"), Eset = Eset,
+average = "median", stepwise=TRUE, coef=TRUE,
 optimal=T, plot_cutpoint=F)
 }
 

@@ -36,10 +36,10 @@ hazard_list <- function (x,
 
       z[,3] <- Biobase::exprs(Eset)[genename,]
 
-      # z-score:
-      Z_score_1 <- z[,3] - mean(z[,3])
-      Z_score <- Z_score_1 / stats::sd(z[,3])
-      z[,3] <- Z_score
+      # z-score (already done with the voom function):
+      #Z_score_1 <- z[,3] - mean(z[,3])
+      #Z_score <- Z_score_1 / stats::sd(z[,3])
+      #z[,3] <- Z_score
 
       if (missing(additional)){
         z$additional <- 0
@@ -75,11 +75,12 @@ hazard_list <- function (x,
       if(nrow(z)!=0){
         coeff <- stats::coef(summary(survival::coxph(survival::Surv(z$time, z$event) ~ z[,3])))
         coxph1 <- rbind(coxph1, coeff)
+
       } else {
-        coxph1 <- rbind(coxph1, NA)
+        coxph1 <- rbind(coxph1, c(NA,NA,NA,NA,NA))
       }
     } else {
-      coxph1 <- rbind(coxph1, NA)
+      coxph1 <- rbind(coxph1, c(NA,NA,NA,NA,NA))
     }
   }
   rownames(coxph1) <- gene

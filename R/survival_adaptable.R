@@ -44,9 +44,9 @@
 #' }
 Survival_adaptable <- function (Eset,
                                 survival="overall",
-                                clinical,
-                                mutation,
-                                expression,
+                                clinical = FALSE,
+                                mutation = FALSE,
+                                expression = FALSE,
                                 optimal = FALSE,
                                 value,
                                 gene_signature,
@@ -66,6 +66,7 @@ Survival_adaptable <- function (Eset,
                                 return_fit=FALSE,
                                 factor_list=FALSE,
                                 ...) {
+
 
   if (missing(xlabel)){
     xlabel <- "time"
@@ -93,7 +94,7 @@ Survival_adaptable <- function (Eset,
   not_existing_clinical <- NULL
   not_existing_mutation <- NULL
 
-  if(!missing(clinical)){
+  if(clinical[1]!=FALSE){
     exist_in_pData <- clinical[clinical %in% colnames(Biobase::pData(Eset))]
     if(length(exist_in_pData)<length(clinical)){
       not_existing_clinical <- clinical[!clinical %in% colnames(Biobase::pData(Eset))]
@@ -101,7 +102,7 @@ Survival_adaptable <- function (Eset,
   } else {
     exist_in_pData <- NULL
   }
-  if(!missing(expression)){
+  if(expression[1]!=FALSE){
     exist_in_exprs <- expression[expression %in% rownames(Biobase::exprs(Eset))]
     if(length(exist_in_exprs)<length(expression)){
       not_existing_exprs <- expression[!expression %in% rownames(Biobase::exprs(Eset))]
@@ -109,7 +110,7 @@ Survival_adaptable <- function (Eset,
   } else {
     exist_in_exprs <- NULL
   }
-  if(!missing(mutation)){
+  if(mutation[1]!=FALSE){
     exist_in_mutation <- mutation[mutation %in% colnames(Biobase::pData(Eset))]
     if(length(exist_in_mutation)<length(mutation)){
       not_existing_mutation <- mutation[!mutation %in% colnames(Biobase::pData(Eset))]
@@ -368,24 +369,26 @@ Survival_adaptable <- function (Eset,
     z[,3:length(colnames(z))] <- lapply(z[,3:length(colnames(z))],factor)
   }
 
-  count_exps <- nlevels(z[,exist_in_exprs])/length(exist_in_exprs)
-  count_mut <- nlevels(z[,exist_in_mutation])*length(exist_in_mutation)
-  count_clin <- nlevels(z[,exist_in_pData])*length(exist_in_pData)
+  if(length(exist_in_exprs)>0){
+    count_exps <- nlevels(z[,exist_in_exprs])/length(exist_in_exprs)
+    count_mut <- nlevels(z[,exist_in_mutation])*length(exist_in_mutation)
+    count_clin <- nlevels(z[,exist_in_pData])*length(exist_in_pData)
 
-  if(count_exps==0) count_exps=1
-  if(count_mut==0) count_mut=1
-  if(count_clin==0) count_clin=1
 
-  if((count_exps*count_mut*count_clin)<3){
-    if(p.val == TRUE){
-      p.val = TRUE
+    if(count_exps==0) count_exps=1
+    if(count_mut==0) count_mut=1
+    if(count_clin==0) count_clin=1
+
+    if((count_exps*count_mut*count_clin)<3){
+      if(p.val == TRUE){
+        p.val = TRUE
+      } else {
+        p.val = FALSE
+      }
     } else {
       p.val = FALSE
     }
-  } else {
-    p.val = FALSE
   }
-
    Survobject <- stats::as.formula(paste("Surv(time = time, event = event) ~", formula))
 
   fit <- do.call(survival::survfit,
@@ -409,7 +412,7 @@ Survival_adaptable <- function (Eset,
     )
     p.val <- 1 - stats::pchisq(sdf$chisq, length(sdf$n) - 1)
 
-    quantile_survival <- quantile(fit, probs = c(0.05,0.25,0.5,0.75,0.95))
+    quantile_survival <- stats::quantile(fit, probs = c(0.05,0.25,0.5,0.75,0.95))
 
     return(list(fit,cox,paste("P-Value =",p.val),quantile_survival))
   }

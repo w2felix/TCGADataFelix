@@ -13,6 +13,8 @@
 #' @param return_df Returns the Dataframe that is used for calculatinf the Cox Regression
 #' @param plot_cutpoint Plot the graph how the optimal cutpoint was calculated, normal survival plot will be REPLACED by surv_cutpoint: Determine the optimal cutpoint for each variable using ’maxstat’
 #' @param coef Return the coefficients of the multivariate analysis instead of the multivariate object
+#' @param stepwise Do a stepwise chosing a model by AIC to get rid of variables that don't play a role in the linear model
+#' @param combined includes a comination of the different genes into the analysis. still in development
 #' @param ... additional variables that can be added
 #'
 #' @return The summary of the multivariate analysis
@@ -22,9 +24,8 @@
 #'
 #' @examples
 #' \dontrun{
-#' Multivariate(x = c("FOXA2"), Eset = Eset,
-#' value = 0, extrafactor = "ETHNICITY",
-#' exclude = c("LATINO"), average = "median",
+#' Multivariate(x = c("FOXA2", "GENDER"), Eset = Eset,
+#' average = "median", stepwise=TRUE, coef=TRUE,
 #' optimal=T, plot_cutpoint=F)
 #' }
 #'
@@ -40,7 +41,8 @@ Multivariate <- function (x,
                           return_df=FALSE,
                           plot_cutpoint=F,
                           coef=F,
-                          combined=T,
+                          combined=F,
+                          stepwise=F,
                           ...) {
 
   if(survival=="overall") {
@@ -160,6 +162,7 @@ Multivariate <- function (x,
         }
 
       } else {
+        combined=FALSE
         quantile_values <- stats::quantile(Biobase::pData(Eset)[,exist_in_exprs], c(.25, .50, .75))
         Biobase::pData(Eset)[,exist_in_exprs] <- ifelse(Biobase::pData(Eset)[,exist_in_exprs] < quantile_values[1], "Lower Quantile", ifelse(Biobase::pData(Eset)[,exist_in_exprs] < quantile_values[3], "Intermediate", "Upper Quantile"))
       }
@@ -217,7 +220,7 @@ Multivariate <- function (x,
 
   formula <- paste(pData_formula,exprs_formula,additional_combined)
 
-  Survobject <- stats::as.formula(paste("Surv(time, event) ~", formula))
+  Survobject <- stats::as.formula(paste("survival::Surv(time, event) ~", formula))
   multivariate <-  do.call(survival::coxph,
                            list(formula = Survobject,
                                 data = Biobase::pData(Eset)
@@ -228,6 +231,16 @@ Multivariate <- function (x,
     return(multivariate)
   }
 
+  if(!stepwise){
+    step_multivariate <- stats::step(multivariate)
+    if(!coef){
+      return(summary(step_multivariate))
+    } else {
+      return(coef(summary(step_multivariate)))
+    }
+  }
+
   coefficients_multivariate <- stats::coef(summary(multivariate))
   coefficients_multivariate
+
 }
