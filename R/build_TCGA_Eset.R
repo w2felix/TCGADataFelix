@@ -30,6 +30,7 @@ build_TCGA_Eset <- function (clinical_file,
 
 
 
+
 if(source=="firehose") {
 
   ### Import clinical Data
@@ -129,16 +130,34 @@ if(source=="firehose") {
   expressiondata <- expressiondata[,-c(1:2)]
   colnames(expressiondata) <- substr(colnames(expressiondata),1,12)
 
-  # first I remove genes whose expression is == 0 in more than 50% of the samples:
-  rem <- function(x){
-    x <- as.matrix(x)
-    x <- t(apply(x,1,as.numeric))
-    r <- as.numeric(apply(x,1,function(i) sum(i == 0)))
-    remove <- which(r > dim(x)[2]*0.5)
-    return(remove)
-  }
-  remove_data <- rem(expressiondata)
-  expression_removed <- expressiondata[-remove_data,]
+
+  baseR.replace <- function(x) { replace(x, is.na(x), 0) }
+
+  expressiondata_na <- baseR.replace(expressiondata)
+
+  # first I remove genes whose expression is == 0 in more than 80% of the samples:
+  # function disabled -> some genes are not expressed!
+  #rem <- function(x){
+  #  x <- as.matrix(x)
+  #  x <- t(apply(x,1,as.numeric))
+  #  r <- as.numeric(apply(x,1,function(i) sum(i == 0)))
+  #  remove <- which(r > dim(x)[2]*0.5)
+  #  if(length(remove)==0){
+  #    remove <- 0
+  #  }
+  #  return(remove)
+  # }
+
+  #remove_data <- rem(expressiondata_na)
+
+  #if(remove_data!=0){
+  #  expression_removed <- expressiondata_na[-remove_data,]
+  #} else {
+  #  expression_removed <- expressiondata_na
+  #}
+
+  expression_removed <- expressiondata_na
+
   # View(expression_removed)
   ### end remove empty genes
   vm <- function(x){
@@ -224,7 +243,7 @@ if(source=="firehose"){
   new_genenames_filtered <- ifelse(new_genenames=="?",rownames(expression_removed_vm_zscore),new_genenames)
   new_genenames_filtered_2 <- ifelse(duplicated(new_genenames_filtered),rownames(expression_removed_vm_zscore),new_genenames_filtered)
   rownames(expression_removed_vm_zscore) <- new_genenames_filtered_2
-  }
+}
 
 expressionData <- expression_removed_vm_zscore
 
@@ -292,11 +311,22 @@ if(source=="firehose"){
   clinical$X_OS_IND <- ifelse(clinical$OS_STATUS == 'LIVING', 0,1)
   clinical$X_OS <- as.numeric(clinical$OS_MONTHS)*30.4167
 
-  clinical$X_DFS_IND <- ifelse(clinical$DFS_STATUS == 'DiseaseFree', 0, ifelse(clinical$DFS_STATUS == 'Recurred/Progressed', 1, NA))
-  clinical$X_DFS <- as.numeric(clinical$DFS_MONTHS)*30.4167
+  if(length(clinical$X_DFS_IND)>0){
+    clinical$X_DFS_IND <- ifelse(clinical$DFS_STATUS == 'DiseaseFree', 0, ifelse(clinical$DFS_STATUS == 'Recurred/Progressed', 1, NA))
+    clinical$X_DFS <- as.numeric(clinical$DFS_MONTHS)*30.4167
+  }
+
+
+  if(length(clinical$DFS_STATUS)>0){
+    clinical$X_DFS_IND <- ifelse(clinical$DFS_STATUS == 'DiseaseFree', 0, ifelse(clinical$DFS_STATUS == 'Recurred/Progressed', 1, NA))
+    clinical$X_DFS <- as.numeric(clinical$DFS_MONTHS)*30.4167
+  }
+
 
   if(!"AGE" %in% colnames(clinical)) {
-    clinical$AGE <- floor(-as.numeric(clinical$DAYS_TO_BIRTH)/365.2422)
+    if(!"AGE_AT_DIAGNOSIS" %in% colnames(clinical)){
+      clinical$AGE <- floor(-as.numeric(clinical$DAYS_TO_BIRTH)/365.2422)
+    }
   }
 
 }

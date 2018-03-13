@@ -85,7 +85,7 @@ filepath <- "~/R/Projects/TCGA-Elisa/tcga_KIRC_cBio/"
 clinical_data <- "data_bcr_clinical_data_patient.txt"  
 
 # The filename of the expression data
-expression_data <- "data_RNA_Seq_v2_mRNA_median_Zscores.txt"
+expression_data <- "data_RNA_Seq_v2_expression_median.txt"
 ```
 
 For the mutation Data, cBioportal and Firehose Data differs, as Firehose gives one file for each patient in a folder and cBioportal one file with all mutations and patients in.
@@ -116,7 +116,7 @@ values for skip:
 So far you need to test which `skip` is the right one for the clinical data. Check in the clinical data file at which row the header for the clinical data is and use this row number minus 1 as the value for `skip`.
 
 ```{r warning=FALSE, message=FALSE}
-source <- "cBio_z_score"
+source <- "cBio"
 Eset <- build_TCGA_Eset(clinical_file = paste(filepath,clinical_data, sep = ""),
                         expression_file = paste(filepath,expression_data, sep = ""),
                         source = source,

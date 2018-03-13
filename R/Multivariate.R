@@ -231,7 +231,7 @@ Multivariate <- function (x,
     return(multivariate)
   }
 
-  if(!stepwise){
+  if(stepwise){
     step_multivariate <- stats::step(multivariate)
     if(!coef){
       return(summary(step_multivariate))

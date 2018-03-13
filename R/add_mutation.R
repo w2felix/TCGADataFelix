@@ -25,15 +25,17 @@ add_mutation <- function (Eset,
     if(!mutations[i] %in% mutationdata[,1]){
       stop(paste(mutations[i], "not in gene or patient list"))
     }
-    mutation_patients <- data.frame(unique(substr(mutationdata[mutationdata[,1]==mutations[i],16],1,12)),stringsAsFactors=FALSE)
+    mutation_patients <- data.frame(unique(substr(mutationdata[mutationdata[,1]==mutations[i],"Tumor_Sample_Barcode"],1,12)),stringsAsFactors=FALSE)
     colnames(mutation_patients) <- "PATIENT_ID"
-    mutation_patients[,mutations[i]] <- "mutated"
+    mutation_patients[,paste(mutations[i],"mutations")] <- paste(mutations[i],"mutated")
+
+
     Biobase::pData(Eset) <- dplyr::left_join(Biobase::pData(Eset),mutation_patients,by = c("PATIENT_ID" = "PATIENT_ID"))
-    Biobase::pData(Eset)[,mutations[i]] <- ifelse(!is.na(Biobase::pData(Eset)[,mutations[i]]), "mutated", "not mutated")
+    Biobase::pData(Eset)[,paste(mutations[i],"mutations")] <- ifelse(!is.na(Biobase::pData(Eset)[,paste(mutations[i],"mutations")]), "mutated", "not mutated")
   }
 
   if(length(mutations)>1){
-    multiple_mut <- Biobase::pData(Eset)[,mutations]=="mutated"
+    multiple_mut <- Biobase::pData(Eset)[,paste(mutations,"mutations")]=="mutated"
     if(multiple=="all"){
       Biobase::pData(Eset)[,paste(mutations,  collapse = " & ")] <- ifelse(apply(multiple_mut, 1, sum, na.rm=TRUE)==length(mutations),"all mutated","not all mutated")
     } else if(multiple=="one") {

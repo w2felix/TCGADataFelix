@@ -49,12 +49,13 @@ Survival_adaptable <- function (Eset,
                                 expression = FALSE,
                                 optimal = FALSE,
                                 value,
-                                gene_signature,
+                                gene_signature = "no",
                                 groupings= FALSE,
                                 exclude,
                                 show_only=FALSE,
                                 p.val = FALSE,
                                 logrisk = TRUE,
+                                palette = "jco",
                                 xlabel,
                                 ylabel,
                                 plot_title = "",
@@ -65,9 +66,10 @@ Survival_adaptable <- function (Eset,
                                 return_df=FALSE,
                                 return_fit=FALSE,
                                 factor_list=FALSE,
+                                conf_int = F,
                                 ...) {
 
-
+require(survival)
   if (missing(xlabel)){
     xlabel <- "time"
   }
@@ -82,7 +84,7 @@ Survival_adaptable <- function (Eset,
   if(survival=="overall") {
     time <- as.numeric(Biobase::pData(Eset)$X_OS)
     event <- Biobase::pData(Eset)$X_OS_IND
-  } else if(survival=="DFS"){
+  } else if(survival=="disease free"){
     time <- as.numeric(Biobase::pData(Eset)$X_DFS)
     event <- Biobase::pData(Eset)$X_DFS_IND
   } else {
@@ -200,7 +202,7 @@ Survival_adaptable <- function (Eset,
 
       if(plot_cutpoint){
         graphics::par(mfrow=c(2,1))
-        return(graphics::plot(value_cutpoint, exist_in_exprs, palette = "npg"))
+        return(graphics::plot(value_cutpoint, exist_in_exprs, palette = "jco"))
       }
       two_groups <- T
     } else if(missing(value)){
@@ -232,15 +234,23 @@ Survival_adaptable <- function (Eset,
           z$median <- Biobase::rowMedians(df_matrix)
           z$mean <- rowMeans(df_matrix)
           if(gene_signature=="mean"){
+            for(i in 1:length(exist_in_exprs)){
+              z[,paste("values_",exist_in_exprs[i],sep="")] <- z[,exist_in_exprs[i]]
+            }
             z$gene_signature <- ifelse(apply(z[,exist_in_exprs],1,mean) > value_combined,
                                        "High Expression",
                                        "Low Expression")
           } else if(gene_signature=="median"){
+            for(i in 1:length(exist_in_exprs)){
+              z[,paste("values_",exist_in_exprs[i],sep="")] <- z[,exist_in_exprs[i]]
+            }
             z$gene_signature <- ifelse(apply(z[,exist_in_exprs],1,stats::median) > value_combined,
                                        "High Expression",
                                        "Low Expression")
           }
           gene_signature_factor <- "gene_signature"
+        }  else if(gene_signature=="no") {
+          gene_signature_factor <- NULL
         } else if(!missing(gene_signature)){
           stop("Multiple genes can only be combined using \"median\" or \"mean\" as the parameter for `gene_signature`to use them as a gene expression signature. If you do not want a gene expression signature, leave the parameter out")
         } else {
@@ -253,6 +263,7 @@ Survival_adaptable <- function (Eset,
         gene_signature_factor <- NULL
       }
       for(i in 1:length(exist_in_exprs)){
+        z[,paste("values_",exist_in_exprs[i],sep="")] <- z[,exist_in_exprs[i]]
         z[,exist_in_exprs[i]] <- ifelse(z[,exist_in_exprs[i]] > value_single[i],
                                         "High Expression",
                                         "Low Expression")
@@ -291,7 +302,7 @@ Survival_adaptable <- function (Eset,
       warning("Value: Clinical and mutational data cannot be divided into groups by a user defined gene expression value, parameter value and optimal will be ignored")
     }
     if(!missing(gene_signature)){
-      warning("gene_signature: A gene expression signature cannot be calculated if no genes are there to be analyzed, parameter signature will be ignored")
+      warning("gene_signature: A gene expression signature cannot be calculated if no genes are there to be analyzed, parameter gene_signature will be ignored")
     }
   }
 
@@ -418,7 +429,9 @@ Survival_adaptable <- function (Eset,
   }
 
   # Calculate scaling of X-Axis
-  if(max(z$time,na.rm=TRUE)>500){
+  if(max(z$time,na.rm=TRUE)>5000){
+    breaks <- 2000
+  } else if(max(z$time,na.rm=TRUE)>500) {
     breaks <- 500
   } else {
     breaks <- 50
@@ -441,7 +454,7 @@ Survival_adaptable <- function (Eset,
                              data=z,
                              title = plot_title,
                              surv.scale = c("percent"),
-                             #palette = "RdBu",
+                             palette = palette,
                              #xscale = "d_y",
                              legend = legend_position,
                              #legend.labs = naming_factors,
@@ -452,7 +465,7 @@ Survival_adaptable <- function (Eset,
                              pval = p.val,             # show p-value of log-rank test.
                              pval.method = TRUE,
                              log.rank.weights = "n",
-                             conf.int = F,         # show confidence intervals for point estimaes of survival curves.
+                             conf.int = conf_int,         # show confidence intervals for point estimaes of survival curves.
                              xlab = xlabel,
                              ylab = ylabel,
                              risk.table = risk_table,       # show risk table.
@@ -464,7 +477,6 @@ Survival_adaptable <- function (Eset,
                              #cumcensor=T
                              # tables.theme = theme_cleantable(),
                              # ggtheme = theme_bw() # Change ggplot2 theme
-
                              surv.median.line="hv",
                              ...
 
